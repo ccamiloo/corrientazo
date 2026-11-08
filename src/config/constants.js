@@ -49,20 +49,27 @@ export const CAMERA = {
 //   Horizontal (factorX): se desplaza la textura (tilePositionX = scrollX · factorX). Las capas de 960 px
 //     se repiten sin costura, así que sirven para salas de cualquier ancho.
 //   Vertical (factorY): anclado al suelo, salvo las capas con factorY 0 (el cielo), que quedan fijas en
-//     y = 0 cubriendo toda la pantalla y nunca se mueven. Con la cámara lo más abajo posible, la fila groundLine de cada
-//     imagen coincide en pantalla con la superficie del suelo; si la cámara sube Δ px, la capa baja
-//     factorY · Δ px en pantalla (el suelo baja Δ, así que la capa "se queda atrás" como algo lejano).
-// Cada fondo es una carpeta en <basePath><nombre>/ con las mismas 4 capas (ver README.txt ahí). Las salas eligen el suyo con el campo `background`; los componentes usan ParallaxBackground.
-export const BACKGROUNDS = ['street', 'park', 'market', 'construction'];
+//     y = 0 cubriendo toda la pantalla y nunca se mueven. Con la cámara lo más abajo posible, la fila
+//     groundLine de cada imagen coincide en pantalla con la superficie del suelo; si la cámara sube Δ px,
+//     la capa baja factorY · Δ px (el suelo baja Δ, así que la capa "se queda atrás" como algo lejano).
+// Cada fondo es una carpeta <basePath><versión>/<nombre>/ con las mismas 4 capas (ver README.txt ahí).
+// Hay dos versiones del arte: 'backgrounds' (con bruma) y 'backgrounds_sin_bruma'; cada fondo elige la
+// suya en BACKGROUND_SOURCES. Las salas eligen fondo con el campo `background` (lo dibuja ParallaxBackground).
+export const BACKGROUND_SOURCES = {
+  street: 'backgrounds', // con bruma
+  park: 'backgrounds_sin_bruma',
+  market: 'backgrounds_sin_bruma',
+  construction: 'backgrounds', // con bruma
+};
+export const BACKGROUNDS = Object.keys(BACKGROUND_SOURCES); // orden del ciclo de F2
 
 export const PARALLAX = {
-  // Relativa: Vite sirve public/ en la raíz y la copia a dist/. Usamos la versión sin bruma; la versión
-  // con bruma sigue en public/assets/backgrounds/ por si se quiere comparar (basta cambiar esta ruta).
-  basePath: 'assets/backgrounds_sin_bruma/',
+  basePath: 'assets/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
   groundLine: 256, // px, fila de las imágenes donde se apoya la base de las casas
   // checkBottom: en modo debug, avisar por consola si el borde inferior de la capa queda por encima del
-  // de la pantalla. sky y clouds miden 270 y con el anclaje su borde queda siempre ~50 px arriba (avisarían
-  // todo el tiempo), pero no dejan hueco porque far y mid, opacas abajo, las tapan. Las que importan son esas dos.
+  // de la pantalla. sky está fija en y = 0 y cubre toda la pantalla; clouds mide 270 y con el anclaje
+  // su borde queda ~50 px arriba (avisaría todo el tiempo), pero es transparente abajo y far/mid, opacas,
+  // la tapan. Las que importan son esas dos.
   layers: [
     { id: 'sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0, checkBottom: false },
     { id: 'clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05, checkBottom: false },

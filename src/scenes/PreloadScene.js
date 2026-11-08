@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS } from '../config/constants.js';
+import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS } from '../data/characters.js';
 
@@ -20,7 +20,7 @@ export class PreloadScene extends Phaser.Scene {
     // Cargamos todos los fondos (16 PNG chicos): así cambiar de sala o de fondo con F2 no espera carga.
     for (const bg of BACKGROUNDS) {
       for (const layer of PARALLAX.layers) {
-        this.load.image(bgKey(bg, layer.id), `${PARALLAX.basePath}${bg}/${layer.file}`);
+        this.load.image(bgKey(bg, layer.id), `${PARALLAX.basePath}${BACKGROUND_SOURCES[bg]}/${bg}/${layer.file}`);
       }
     }
   }
