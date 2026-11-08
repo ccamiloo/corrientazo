@@ -48,15 +48,17 @@ export const CAMERA = {
 // ancho y con el alto real de su imagen (270 o 400): repite solo en horizontal. Factores: 0 = no se mueve (cielo, "infinitamente lejos"); 1 = se movería igual que el mundo.
 //   Horizontal (factorX): se desplaza la textura (tilePositionX = scrollX · factorX). Las capas de 960 px
 //     se repiten sin costura, así que sirven para salas de cualquier ancho.
-//   Vertical (factorY): anclado al suelo. Con la cámara lo más abajo posible, la fila groundLine de cada
+//   Vertical (factorY): anclado al suelo, salvo las capas con factorY 0 (el cielo), que quedan fijas en
+//     y = 0 cubriendo toda la pantalla y nunca se mueven. Con la cámara lo más abajo posible, la fila groundLine de cada
 //     imagen coincide en pantalla con la superficie del suelo; si la cámara sube Δ px, la capa baja
 //     factorY · Δ px en pantalla (el suelo baja Δ, así que la capa "se queda atrás" como algo lejano).
-// Cada fondo es una carpeta en public/assets/backgrounds/<nombre>/ con las mismas 4 capas (ver README.txt
-// ahí). Las salas eligen el suyo con el campo `background`; los componentes usan ParallaxBackground.
+// Cada fondo es una carpeta en <basePath><nombre>/ con las mismas 4 capas (ver README.txt ahí). Las salas eligen el suyo con el campo `background`; los componentes usan ParallaxBackground.
 export const BACKGROUNDS = ['street', 'park', 'market', 'construction'];
 
 export const PARALLAX = {
-  basePath: 'assets/backgrounds/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
+  // Relativa: Vite sirve public/ en la raíz y la copia a dist/. Usamos la versión sin bruma; la versión
+  // con bruma sigue en public/assets/backgrounds/ por si se quiere comparar (basta cambiar esta ruta).
+  basePath: 'assets/backgrounds_sin_bruma/',
   groundLine: 256, // px, fila de las imágenes donde se apoya la base de las casas
   // checkBottom: en modo debug, avisar por consola si el borde inferior de la capa queda por encima del
   // de la pantalla. sky y clouds miden 270 y con el anclaje su borde queda siempre ~50 px arriba (avisarían

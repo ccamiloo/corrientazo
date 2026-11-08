@@ -18,7 +18,12 @@ export const bgKey = (background, layerId) => `bg-${background}-${layerId}`;
 //     la capa nunca se acaba aunque la sala sea más ancha que la imagen.
 //   - Vertical: se mueve la y del TileSprite (no tilePositionY, ver update()). Con la cámara lo más
 //     abajo posible, la fila groundLine de la imagen coincide con el suelo; si la cámara sube Δ px,
-//     la capa baja factorY · Δ px en pantalla.
+//     la capa baja factorY · Δ px en pantalla. Excepción: con factorY 0 (cielo) la capa queda fija en
+//     y = 0, cubriendo toda la pantalla.
+//
+// También pone el color de fondo de la cámara de la escena en el de la fila más baja del cielo: si algún
+// día queda un hueco entre capas, se ve "más cielo" en vez del negro del canvas. Es el color de ESTA
+// cámara; los menús (otras escenas) siguen con el backgroundColor oscuro del juego.
 export class ParallaxBackground {
   constructor(scene, background) {
     this.scene = scene;
@@ -66,9 +71,34 @@ export class ParallaxBackground {
       this.layers.push({ ...layer, key, ts, lastGap: 0 });
     });
 
+    // Si el cielo no cargó, dejamos el color que tenga la cámara (el oscuro del juego).
+    const skyColor = this.skyBottomColor(background);
+    if (skyColor !== null) this.cam.setBackgroundColor(skyColor);
+
     // Posicionamos ya con el scroll actual, para que el fondo nuevo no se vea un frame mal ubicado.
     this.update();
     return this;
+  }
+
+  // Color de la fila más baja de la capa con factorY 0 (el cielo). Se lee de la imagen en vez de
+  // escribirlo a mano, así sigue siendo correcto si cambia el arte. Tomamos el color más frecuente de
+  // esa fila por si tiene algún detalle (sol, edificio) que no represente la banda.
+  skyBottomColor(background) {
+    const sky = PARALLAX.layers.find((l) => l.factorY === 0);
+    const key = sky && bgKey(background, sky.id);
+    if (!key || !this.scene.textures.exists(key)) return null;
+    const { width, height } = this.scene.textures.get(key).getSourceImage();
+    const counts = new Map();
+    for (let x = 0; x < width; x++) {
+      const c = this.scene.textures.getPixel(x, height - 1, key);
+      if (!c || c.alpha < 255) continue;
+      const rgb = c.color; // entero 0xRRGGBB
+      counts.set(rgb, (counts.get(rgb) ?? 0) + 1);
+    }
+    let best = null;
+    let bestN = 0;
+    for (const [rgb, n] of counts) if (n > bestN) [best, bestN] = [rgb, n];
+    return best;
   }
 
   // Siguiente fondo de la lista, en ciclo (para la tecla de debug F2).
@@ -102,7 +132,8 @@ export class ParallaxBackground {
       // Vertical: movemos el TileSprite y no tilePositionY a propósito. tilePositionY repite la textura,
       // así que si la capa bajara más allá de su borde aparecería la parte de arriba de la imagen debajo;
       // moviendo y, lo que queda fuera de la imagen es simplemente transparente (y se nota si pasa).
-      ts.y = Math.round(this.baseY + factorY * rise);
+      // factorY 0 = infinitamente lejos: fijo a la pantalla en y = 0 (no se le aplica el ancla).
+      ts.y = factorY === 0 ? 0 : Math.round(this.baseY + factorY * rise);
 
       if (layer.checkBottom && debug) this.checkBottom(layer);
     }
