@@ -1,8 +1,8 @@
 import * as Phaser from 'phaser';
-import { TILE, PLAYER, COLORS } from '../config/constants.js';
+import { TILE, PLAYER, COLORS, PARALLAX } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 
-// Carga de assets. En el greybox no hay archivos: generamos texturas por código.
+// Carga de assets. Los fondos se cargan desde archivo; el resto del greybox se genera por código.
 //
 // Clave del diseño: el resto del juego solo conoce las *keys* de textura ('player-0', 'tile', 'hazard'...).
 // Cuando llegue el arte, este preload() pasará a hacer this.load.image / this.load.spritesheet
@@ -10,6 +10,15 @@ import { CHARACTERS } from '../data/characters.js';
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super('Preload');
+  }
+
+  preload() {
+    // Fondo con parallax. Los PNG viven en media/ (ignorada por git), así que en un clon limpio
+    // del repo no existen: avisamos y seguimos, GameScene simplemente omite las capas que falten.
+    this.load.on('loaderror', (file) => console.warn(`[Preload] no se pudo cargar ${file.key} (${file.url})`));
+    for (const layer of PARALLAX.layers) {
+      this.load.image(layer.key, PARALLAX.basePath + layer.file);
+    }
   }
 
   create() {

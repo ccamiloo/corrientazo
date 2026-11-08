@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, PLAYER, CAMERA, COLORS } from '../config/constants.js';
+import { GAME_W, GAME_H, PLAYER, CAMERA, PARALLAX, DEPTH } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { Player } from '../entities/Player.js';
@@ -28,8 +28,10 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     const room = this.room;
-    this.cameras.main.setBackgroundColor(COLORS.background);
     this.controls = new Controls(this);
+
+    // --- Fondo con parallax ---
+    this.createParallax();
 
     // --- Habitación ---
     const { solids, width, height } = buildRoom(this, room);
@@ -92,6 +94,45 @@ export class GameScene extends Phaser.Scene {
 
     // --- Debug (F1) ---
     this.debug = new DebugOverlay(this, this.player);
+  }
+
+  createParallax() {
+    // Cada capa es un TileSprite del tamaño de la pantalla, fijo a la cámara (scrollFactor 0).
+    // El "movimiento" no es del objeto sino de su textura: tilePositionX desplaza el patrón,
+    // y como la textura se repite, la capa nunca se acaba aunque la sala sea más ancha que la imagen.
+    this.parallaxLayers = [];
+    PARALLAX.layers.forEach((layer, i) => {
+      // Si el PNG no cargó (p. ej. clon sin la carpeta media/), omitimos la capa en vez de
+      // dibujar la textura de "missing" de Phaser.
+      if (!this.textures.exists(layer.key)) return;
+      const ts = this.add
+        .tileSprite(0, 0, GAME_W, GAME_H, layer.key)
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.background + i);
+      this.parallaxLayers.push({ ts, factor: layer.factor });
+    });
+
+    // ¿Por qué no en update()? Phaser calcula el scroll de la cámara (follow + lerp) en
+    // camera.preRender, DESPUÉS de update. Leer scrollX en update daría el valor del frame anterior
+    // y el fondo iría un frame atrasado respecto al mundo. FOLLOW_UPDATE se emite justo tras
+    // calcular el scroll y antes de dibujar, así que fondo y mundo usan el mismo valor.
+    const cam = this.cameras.main;
+    cam.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.updateParallax, this);
+    // La cámara principal se reutiliza entre reinicios de la escena: quitamos el listener al salir
+    // para no acumular uno por cada muerte.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      cam.off(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.updateParallax, this);
+    });
+  }
+
+  updateParallax() {
+    const scrollX = this.cameras.main.scrollX;
+    for (const { ts, factor } of this.parallaxLayers) {
+      // Redondeo a pixel entero: con factores como 0.05 o 0.2 el desplazamiento sería fraccionario
+      // y el muestreo NEAREST alternaría entre dos columnas de pixeles (temblor/costuras).
+      ts.tilePositionX = Math.round(scrollX * factor);
+    }
   }
 
   setupCamera(roomW, roomH) {

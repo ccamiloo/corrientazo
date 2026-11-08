@@ -43,6 +43,23 @@ export const CAMERA = {
   deadzoneH: 48, // px, idem en vertical; absorbe micro-variaciones de Y y evita temblor
 };
 
+// --- Fondo con parallax ---
+// Capas de fondo, de atrás hacia adelante. Cada una es un TileSprite del tamaño de la pantalla fijo
+// a la cámara; en update se desplaza su textura según cámara.scrollX * factor.
+//   factor 0   → no se mueve (cielo, "infinitamente lejos")
+//   factor 1   → se movería igual que el mundo
+// Las capas de 960 px se repiten sin costura, así que sirven para salas de cualquier ancho.
+// Solo hay parallax horizontal: en vertical las capas quedan alineadas con la pantalla.
+export const PARALLAX = {
+  basePath: 'media/backgrounds/calle/',
+  layers: [
+    { key: 'bg-sky', file: 'layer_1_sky.png', factor: 0 },
+    { key: 'bg-clouds', file: 'layer_2_clouds.png', factor: 0.05 },
+    { key: 'bg-far', file: 'layer_3_far.png', factor: 0.2 },
+    { key: 'bg-mid', file: 'layer_4_mid.png', factor: 0.5 },
+  ],
+};
+
 // --- Interacción ---
 export const INTERACT_RADIUS = 28; // px, distancia (centro a centro, en X) para mostrar la "E"
 
@@ -59,6 +76,7 @@ export const CONTROLS = {
 
 // --- Profundidades de dibujo (mayor = encima) ---
 export const DEPTH = {
+  background: -100, // la capa i del parallax se dibuja en background + i (todas detrás de los tiles)
   tiles: 0,
   props: 10,
   player: 20,
