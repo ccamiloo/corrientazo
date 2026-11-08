@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, PLAYER, CAMERA, PARALLAX, DEPTH } from '../config/constants.js';
+import { GAME_W, GAME_H, PLAYER, CAMERA } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { Player } from '../entities/Player.js';
@@ -12,6 +12,7 @@ import { DebugOverlay } from '../systems/DebugOverlay.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
 import { RoomFlags } from '../systems/RoomFlags.js';
 import { buildRoom, tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
+import { ParallaxBackground } from '../systems/ParallaxBackground.js';
 
 // Escena de juego genérica: arma la habitación indicada por roomId a partir de sus datos.
 export class GameScene extends Phaser.Scene {
@@ -30,8 +31,8 @@ export class GameScene extends Phaser.Scene {
     const room = this.room;
     this.controls = new Controls(this);
 
-    // --- Fondo con parallax ---
-    this.createParallax();
+    // --- Fondo con parallax (el de la sala; 'street' si no define uno) ---
+    this.background = new ParallaxBackground(this, room.background ?? 'street');
 
     // --- Habitación ---
     const { solids, width, height } = buildRoom(this, room);
@@ -91,82 +92,10 @@ export class GameScene extends Phaser.Scene {
 
     // --- Cámara ---
     this.setupCamera(width, height);
-    this.anchorParallax(room);
+    this.background.anchor(findGroundY(room));
 
     // --- Debug (F1) ---
     this.debug = new DebugOverlay(this, this.player);
-  }
-
-  createParallax() {
-    // Cada capa es un TileSprite de ancho de pantalla y alto de su imagen, fijo a la cámara (scrollFactor 0).
-    // El "movimiento" no es del objeto sino de su textura: tilePositionX desplaza el patrón,
-    // y como la textura se repite, la capa nunca se acaba aunque la sala sea más ancha que la imagen.
-    this.parallaxLayers = [];
-    PARALLAX.layers.forEach((layer, i) => {
-      // Si el PNG no cargó (p. ej. clon sin la carpeta media/), omitimos la capa en vez de
-      // dibujar la textura de "missing" de Phaser.
-      if (!this.textures.exists(layer.key)) return;
-      // Alto = alto de la imagen: así el TileSprite nunca repite en vertical (tilePositionY queda en 0)
-      // y la posición vertical se maneja solo con su y.
-      const imageH = this.textures.get(layer.key).getSourceImage().height;
-      const ts = this.add
-        .tileSprite(0, 0, GAME_W, imageH, layer.key)
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(DEPTH.background + i);
-      this.parallaxLayers.push({ ...layer, ts, lastGap: 0 });
-    });
-
-    // ¿Por qué no en update()? Phaser calcula el scroll de la cámara (follow + lerp) en
-    // camera.preRender, DESPUÉS de update. Leer scrollX en update daría el valor del frame anterior
-    // y el fondo iría un frame atrasado respecto al mundo. FOLLOW_UPDATE se emite justo tras
-    // calcular el scroll y antes de dibujar, así que fondo y mundo usan el mismo valor.
-    const cam = this.cameras.main;
-    cam.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.updateParallax, this);
-    // La cámara principal se reutiliza entre reinicios de la escena: quitamos el listener al salir
-    // para no acumular uno por cada muerte.
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      cam.off(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, this.updateParallax, this);
-    });
-  }
-
-  // Referencia vertical del parallax, calculada con la geometría real de la sala (llamar tras setupCamera).
-  anchorParallax(room) {
-    const cam = this.cameras.main;
-    // scrollY máximo = cámara lo más abajo posible dentro de sus bounds.
-    this.parallaxMaxScrollY = cam.getBounds().bottom - cam.height;
-    // En esa posición, el suelo se ve en pantalla en groundY - maxScrollY. Queremos que la fila
-    // groundLine de la imagen caiga ahí, así que el borde superior de la capa va groundLine px más arriba.
-    // Ej. sala de prueba: suelo 384, maxScrollY 178 → suelo en pantalla 206 → capa en y = 206 - 256 = -50.
-    this.parallaxBaseY = findGroundY(room) - this.parallaxMaxScrollY - PARALLAX.groundLine;
-  }
-
-  updateParallax() {
-    const { scrollX, scrollY } = this.cameras.main;
-    // Δ = cuánto subió la cámara respecto a la referencia (≥ 0).
-    const rise = this.parallaxMaxScrollY - scrollY;
-    for (const layer of this.parallaxLayers) {
-      const { ts, factorX, factorY } = layer;
-      // Redondeo a pixel entero: con factores como 0.05 o 0.2 el desplazamiento sería fraccionario
-      // y el muestreo NEAREST alternaría entre dos filas/columnas de pixeles (temblor).
-      ts.tilePositionX = Math.round(scrollX * factorX);
-      // Vertical: movemos el TileSprite y no tilePositionY a propósito. tilePositionY repite la textura,
-      // así que si la capa bajara más allá de su borde aparecería la parte de arriba de la imagen debajo;
-      // moviendo y, lo que queda fuera de la imagen es simplemente transparente (y se nota si pasa).
-      ts.y = Math.round(this.parallaxBaseY + factorY * rise);
-
-      if (layer.checkBottom && this.debug?.enabled) this.checkParallaxBottom(layer);
-    }
-  }
-
-  // Debug: si el borde inferior de la capa queda por encima del de la pantalla, debajo se vería un hueco.
-  // Avisa solo cuando el faltante cambia (no en cada frame), y también cuando se cierra.
-  checkParallaxBottom(layer) {
-    const gap = Math.max(0, GAME_H - (layer.ts.y + layer.ts.height));
-    if (gap === layer.lastGap) return;
-    if (gap > 0) console.warn(`[Parallax] ${layer.key}: el borde inferior queda ${gap} px por encima de la pantalla`);
-    else console.info(`[Parallax] ${layer.key}: borde inferior cubierto otra vez`);
-    layer.lastGap = gap;
   }
 
   setupCamera(roomW, roomH) {
@@ -207,6 +136,11 @@ export class GameScene extends Phaser.Scene {
     PlayTimer.tick(this.registry, delta);
 
     if (this.controls.justDown('debug')) this.debug.toggle();
+    // F2 (debug): siguiente fondo. No se guarda: al morir o reiniciar vuelve el de la sala.
+    if (this.controls.justDown('cycleBackground')) {
+      this.background.cycle();
+      console.info(`[Parallax] fondo: ${this.background.name}`);
+    }
 
     // --- Interacción (tecla abajo) ---
     // Una sola consulta por frame: si hay diálogo abierto, la tecla avanza; si no, interactúa con lo más cercano.

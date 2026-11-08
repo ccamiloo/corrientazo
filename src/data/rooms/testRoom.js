@@ -11,6 +11,7 @@
 
 export const testRoom = {
   id: 'testRoom',
+  background: 'street', // carpeta en public/assets/backgrounds/ (ver BACKGROUNDS en constants.js)
 
   layout: [
     '############################################################', // 0  techo

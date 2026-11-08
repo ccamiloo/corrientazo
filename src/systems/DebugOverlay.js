@@ -61,6 +61,7 @@ export class DebugOverlay {
         `pos ${b.x.toFixed(1)}, ${b.y.toFixed(1)}`,
         `vel ${b.velocity.x.toFixed(0)}, ${b.velocity.y.toFixed(0)}`,
         `gnd ${p.grounded ? 'sí' : 'no'}`,
+        `bg  ${this.scene.background?.name ?? '-'} (F2)`,
       ].join('\n'),
     );
   }

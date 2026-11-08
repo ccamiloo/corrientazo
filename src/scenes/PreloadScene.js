@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { TILE, PLAYER, COLORS, PARALLAX } from '../config/constants.js';
+import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS } from '../config/constants.js';
+import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS } from '../data/characters.js';
 
 // Carga de assets. Los fondos se cargan desde archivo; el resto del greybox se genera por código.
@@ -16,8 +17,11 @@ export class PreloadScene extends Phaser.Scene {
     // Fondo con parallax (public/assets/backgrounds/). Si algún PNG falla al cargar avisamos y seguimos:
     // GameScene omite las capas que falten en vez de dibujar la textura de "missing".
     this.load.on('loaderror', (file) => console.warn(`[Preload] no se pudo cargar ${file.key} (${file.url})`));
-    for (const layer of PARALLAX.layers) {
-      this.load.image(layer.key, PARALLAX.basePath + layer.file);
+    // Cargamos todos los fondos (16 PNG chicos): así cambiar de sala o de fondo con F2 no espera carga.
+    for (const bg of BACKGROUNDS) {
+      for (const layer of PARALLAX.layers) {
+        this.load.image(bgKey(bg, layer.id), `${PARALLAX.basePath}${bg}/${layer.file}`);
+      }
     }
   }
 

@@ -24,6 +24,7 @@ npm run preview   # sirve el build para probarlo
 | Interactuar / avanzar diálogo | S / ↓ |
 | Elegir personaje | ← / → y Enter |
 | Modo debug (hitboxes + timer) | F1 |
+| Cambiar el fondo de la sala (debug) | F2 |
 
 ## Stack
 
@@ -52,13 +53,14 @@ src/
 ├── systems/
 │   ├── Controls.js             Agrupa teclas por acción (jump = Espacio/W/↑)
 │   ├── RoomBuilder.js          Convierte el layout de texto en tiles + colisiones fusionadas
+│   ├── ParallaxBackground.js   Fondo de 4 capas con parallax anclado al suelo (elige carpeta por nombre)
 │   ├── DialogBox.js            Caja de diálogo inferior que avanza con S/↓
 │   ├── RoomFlags.js            Flags por habitación (p. ej. "technicianCalled")
 │   ├── PlayTimer.js            Timer global de juego
 │   └── DebugOverlay.js         Panel F1: timer, posición, velocidad + hitboxes
 └── scenes/
     ├── BootScene.js            Arranque
-    ├── PreloadScene.js         Carga de assets (hoy genera las texturas placeholder)
+    ├── PreloadScene.js         Carga los fondos y genera las texturas placeholder
     ├── CharacterSelectScene.js Selección de personaje (guarda la elección en el registry)
     ├── GameScene.js            Arma y corre una habitación a partir de sus datos
     └── GameOverScene.js        "¡CORRIENTAZO!" + tip; una tecla te devuelve al inicio de la sala

@@ -51,17 +51,21 @@ export const CAMERA = {
 //   Vertical (factorY): anclado al suelo. Con la cámara lo más abajo posible, la fila groundLine de cada
 //     imagen coincide en pantalla con la superficie del suelo; si la cámara sube Δ px, la capa baja
 //     factorY · Δ px en pantalla (el suelo baja Δ, así que la capa "se queda atrás" como algo lejano).
+// Cada fondo es una carpeta en public/assets/backgrounds/<nombre>/ con las mismas 4 capas (ver README.txt
+// ahí). Las salas eligen el suyo con el campo `background`; los componentes usan ParallaxBackground.
+export const BACKGROUNDS = ['street', 'park', 'market', 'construction'];
+
 export const PARALLAX = {
-  basePath: 'assets/backgrounds/street/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
+  basePath: 'assets/backgrounds/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
   groundLine: 256, // px, fila de las imágenes donde se apoya la base de las casas
   // checkBottom: en modo debug, avisar por consola si el borde inferior de la capa queda por encima del
   // de la pantalla. sky y clouds miden 270 y con el anclaje su borde queda siempre ~50 px arriba (avisarían
   // todo el tiempo), pero no dejan hueco porque far y mid, opacas abajo, las tapan. Las que importan son esas dos.
   layers: [
-    { key: 'bg-sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0, checkBottom: false },
-    { key: 'bg-clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05, checkBottom: false },
-    { key: 'bg-far', file: 'layer_3_far.png', factorX: 0.2, factorY: 0.2, checkBottom: true },
-    { key: 'bg-mid', file: 'layer_4_mid.png', factorX: 0.5, factorY: 0.5, checkBottom: true },
+    { id: 'sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0, checkBottom: false },
+    { id: 'clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05, checkBottom: false },
+    { id: 'far', file: 'layer_3_far.png', factorX: 0.2, factorY: 0.2, checkBottom: true },
+    { id: 'mid', file: 'layer_4_mid.png', factorX: 0.5, factorY: 0.5, checkBottom: true },
   ],
 };
 
@@ -77,6 +81,7 @@ export const CONTROLS = {
   interact: ['S', 'DOWN'], // "abajo": como entrar/revisar, típico de plataformeros
   confirm: ['ENTER'],
   debug: ['F1'],
+  cycleBackground: ['F2'], // debug: cambia el fondo de la sala entre los de BACKGROUNDS
 };
 
 // --- Profundidades de dibujo (mayor = encima) ---
