@@ -11,7 +11,7 @@ import { DialogBox } from '../systems/DialogBox.js';
 import { DebugOverlay } from '../systems/DebugOverlay.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
 import { RoomFlags } from '../systems/RoomFlags.js';
-import { buildRoom, tileToFeet } from '../systems/RoomBuilder.js';
+import { buildRoom, tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
 
 // Escena de juego genérica: arma la habitación indicada por roomId a partir de sus datos.
 export class GameScene extends Phaser.Scene {
@@ -91,6 +91,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Cámara ---
     this.setupCamera(width, height);
+    this.anchorParallax(room);
 
     // --- Debug (F1) ---
     this.debug = new DebugOverlay(this, this.player);
@@ -110,7 +111,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(DEPTH.background + i);
-      this.parallaxLayers.push({ ts, factor: layer.factor });
+      this.parallaxLayers.push({ ts, factorX: layer.factorX, factorY: layer.factorY });
     });
 
     // ¿Por qué no en update()? Phaser calcula el scroll de la cámara (follow + lerp) en
@@ -126,12 +127,29 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // Referencia vertical del parallax, calculada con la geometría real de la sala (llamar tras setupCamera).
+  anchorParallax(room) {
+    const cam = this.cameras.main;
+    // scrollY máximo = cámara lo más abajo posible dentro de sus bounds.
+    this.parallaxMaxScrollY = cam.getBounds().bottom - cam.height;
+    // En esa posición, el suelo se ve en pantalla en groundY - maxScrollY. Queremos que la fila
+    // groundLine de la imagen caiga ahí, así que el borde superior de la capa va groundLine px más arriba.
+    // Ej. sala de prueba: suelo 384, maxScrollY 178 → suelo en pantalla 206 → capa en y = 206 - 256 = -50.
+    this.parallaxBaseY = findGroundY(room) - this.parallaxMaxScrollY - PARALLAX.groundLine;
+  }
+
   updateParallax() {
-    const scrollX = this.cameras.main.scrollX;
-    for (const { ts, factor } of this.parallaxLayers) {
+    const { scrollX, scrollY } = this.cameras.main;
+    // Δ = cuánto subió la cámara respecto a la referencia (≥ 0).
+    const rise = this.parallaxMaxScrollY - scrollY;
+    for (const { ts, factorX, factorY } of this.parallaxLayers) {
       // Redondeo a pixel entero: con factores como 0.05 o 0.2 el desplazamiento sería fraccionario
-      // y el muestreo NEAREST alternaría entre dos columnas de pixeles (temblor/costuras).
-      ts.tilePositionX = Math.round(scrollX * factor);
+      // y el muestreo NEAREST alternaría entre dos filas/columnas de pixeles (temblor).
+      ts.tilePositionX = Math.round(scrollX * factorX);
+      // Vertical: movemos el TileSprite y no tilePositionY a propósito. tilePositionY repite la textura,
+      // así que si la capa bajara más allá de su borde aparecería la parte de arriba de la imagen debajo;
+      // moviendo y, lo que queda fuera de la imagen es simplemente transparente (y se nota si pasa).
+      ts.y = Math.round(this.parallaxBaseY + factorY * rise);
     }
   }
 

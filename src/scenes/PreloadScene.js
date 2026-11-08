@@ -13,8 +13,8 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    // Fondo con parallax. Los PNG viven en media/ (ignorada por git), así que en un clon limpio
-    // del repo no existen: avisamos y seguimos, GameScene simplemente omite las capas que falten.
+    // Fondo con parallax (public/assets/backgrounds/). Si algún PNG falla al cargar avisamos y seguimos:
+    // GameScene omite las capas que falten en vez de dibujar la textura de "missing".
     this.load.on('loaderror', (file) => console.warn(`[Preload] no se pudo cargar ${file.key} (${file.url})`));
     for (const layer of PARALLAX.layers) {
       this.load.image(layer.key, PARALLAX.basePath + layer.file);

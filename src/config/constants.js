@@ -45,18 +45,20 @@ export const CAMERA = {
 
 // --- Fondo con parallax ---
 // Capas de fondo, de atrás hacia adelante. Cada una es un TileSprite del tamaño de la pantalla fijo
-// a la cámara; en update se desplaza su textura según cámara.scrollX * factor.
-//   factor 0   → no se mueve (cielo, "infinitamente lejos")
-//   factor 1   → se movería igual que el mundo
-// Las capas de 960 px se repiten sin costura, así que sirven para salas de cualquier ancho.
-// Solo hay parallax horizontal: en vertical las capas quedan alineadas con la pantalla.
+// a la cámara. Factores: 0 = no se mueve (cielo, "infinitamente lejos"); 1 = se movería igual que el mundo.
+//   Horizontal (factorX): se desplaza la textura (tilePositionX = scrollX · factorX). Las capas de 960 px
+//     se repiten sin costura, así que sirven para salas de cualquier ancho.
+//   Vertical (factorY): anclado al suelo. Con la cámara lo más abajo posible, la fila groundLine de cada
+//     imagen coincide en pantalla con la superficie del suelo; si la cámara sube Δ px, la capa baja
+//     factorY · Δ px en pantalla (el suelo baja Δ, así que la capa "se queda atrás" como algo lejano).
 export const PARALLAX = {
-  basePath: 'media/backgrounds/calle/',
+  basePath: 'assets/backgrounds/street/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
+  groundLine: 256, // px, fila de las imágenes donde se apoya la base de las casas
   layers: [
-    { key: 'bg-sky', file: 'layer_1_sky.png', factor: 0 },
-    { key: 'bg-clouds', file: 'layer_2_clouds.png', factor: 0.05 },
-    { key: 'bg-far', file: 'layer_3_far.png', factor: 0.2 },
-    { key: 'bg-mid', file: 'layer_4_mid.png', factor: 0.5 },
+    { key: 'bg-sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0 },
+    { key: 'bg-clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05 },
+    { key: 'bg-far', file: 'layer_3_far.png', factorX: 0.2, factorY: 0.2 },
+    { key: 'bg-mid', file: 'layer_4_mid.png', factorX: 0.5, factorY: 0.5 },
   ],
 };
 

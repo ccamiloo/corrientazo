@@ -66,6 +66,18 @@ export function buildRoom(scene, room) {
   return { solids, width: cols * TILE, height: rows * TILE };
 }
 
+// Altura (px de mundo) de la superficie del suelo de la sala.
+// Suelo = el bloque de filas 100% sólidas pegado al fondo del layout; su superficie es el borde superior
+// de la más alta de esas filas. Si la última fila no es completa (sala con fosos), no hay un suelo
+// continuo que detectar y usamos el punto de apoyo del spawn como referencia.
+export function findGroundY(room) {
+  const { layout } = room;
+  let r = layout.length;
+  while (r > 0 && !layout[r - 1].includes('.')) r--;
+  if (r === layout.length) return tileToFeet(room.spawn).y;
+  return r * TILE;
+}
+
 // Coordenadas de tile (columna, fila de apoyo) → px del punto de apoyo (centro en X, borde superior de la fila).
 export function tileToFeet({ x, y }) {
   return { x: x * TILE + TILE / 2, y: y * TILE };
