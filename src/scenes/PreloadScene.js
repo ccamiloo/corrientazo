@@ -31,6 +31,12 @@ export class PreloadScene extends Phaser.Scene {
       g.generateTexture(key, w, h);
     };
 
+    // Borde de 1 px por DENTRO de la textura: el tamaño no cambia, así sigue coincidiendo con el hitbox.
+    // Se dibuja al final para que quede encima de los detalles (franja, ojos).
+    const outline = (gr, w, h) => {
+      gr.lineStyle(1, COLORS.outline).strokeRect(0.5, 0.5, w - 1, h - 1);
+    };
+
     // Jugadores: rectángulo de color con una franja más clara arriba (indica hacia dónde está la "cabeza")
     // y un ojo a la derecha, para que se note el flipX al girar.
     CHARACTERS.forEach((c) => {
@@ -38,6 +44,7 @@ export class PreloadScene extends Phaser.Scene {
         gr.fillStyle(c.color).fillRect(0, 0, w, h);
         gr.fillStyle(0xffffff, 0.35).fillRect(0, 0, w, 4);
         gr.fillStyle(0x0b0d12).fillRect(w - 5, 8, 2, 3);
+        outline(gr, w, h);
       });
     });
 
@@ -50,6 +57,7 @@ export class PreloadScene extends Phaser.Scene {
     make('npc', 16, 28, (gr, w, h) => {
       gr.fillStyle(COLORS.npc).fillRect(0, 0, w, h);
       gr.fillStyle(0x0b0d12).fillRect(4, 7, 2, 3).fillRect(10, 7, 2, 3);
+      outline(gr, w, h);
     });
 
     make('hazard', 16, 16, (gr, w, h) => {

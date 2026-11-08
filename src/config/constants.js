@@ -96,6 +96,7 @@ export const COLORS = {
   tile: 0x2f3542,
   tileEdge: 0x47505f,
   npc: 0xb48ead,
+  outline: 0x000000, // borde de los personajes placeholder (para juzgar el contraste contra el fondo)
   hazard: 0xffd23f,
   phone: 0xd8dee9,
   phoneAccent: 0xe5484d,
