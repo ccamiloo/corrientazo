@@ -44,8 +44,8 @@ export const CAMERA = {
 };
 
 // --- Fondo con parallax ---
-// Capas de fondo, de atrás hacia adelante. Cada una es un TileSprite del tamaño de la pantalla fijo
-// a la cámara. Factores: 0 = no se mueve (cielo, "infinitamente lejos"); 1 = se movería igual que el mundo.
+// Capas de fondo, de atrás hacia adelante. Cada una es un TileSprite fijo a la cámara, de 480 px de
+// ancho y con el alto real de su imagen (270 o 400): repite solo en horizontal. Factores: 0 = no se mueve (cielo, "infinitamente lejos"); 1 = se movería igual que el mundo.
 //   Horizontal (factorX): se desplaza la textura (tilePositionX = scrollX · factorX). Las capas de 960 px
 //     se repiten sin costura, así que sirven para salas de cualquier ancho.
 //   Vertical (factorY): anclado al suelo. Con la cámara lo más abajo posible, la fila groundLine de cada
@@ -54,11 +54,14 @@ export const CAMERA = {
 export const PARALLAX = {
   basePath: 'assets/backgrounds/street/', // relativa: Vite sirve public/ en la raíz y la copia a dist/
   groundLine: 256, // px, fila de las imágenes donde se apoya la base de las casas
+  // checkBottom: en modo debug, avisar por consola si el borde inferior de la capa queda por encima del
+  // de la pantalla. sky y clouds miden 270 y con el anclaje su borde queda siempre ~50 px arriba (avisarían
+  // todo el tiempo), pero no dejan hueco porque far y mid, opacas abajo, las tapan. Las que importan son esas dos.
   layers: [
-    { key: 'bg-sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0 },
-    { key: 'bg-clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05 },
-    { key: 'bg-far', file: 'layer_3_far.png', factorX: 0.2, factorY: 0.2 },
-    { key: 'bg-mid', file: 'layer_4_mid.png', factorX: 0.5, factorY: 0.5 },
+    { key: 'bg-sky', file: 'layer_1_sky.png', factorX: 0, factorY: 0, checkBottom: false },
+    { key: 'bg-clouds', file: 'layer_2_clouds.png', factorX: 0.05, factorY: 0.05, checkBottom: false },
+    { key: 'bg-far', file: 'layer_3_far.png', factorX: 0.2, factorY: 0.2, checkBottom: true },
+    { key: 'bg-mid', file: 'layer_4_mid.png', factorX: 0.5, factorY: 0.5, checkBottom: true },
   ],
 };
 
