@@ -1,1 +1,18 @@
+# Assets locales que no van al repo
 media/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+
+# Entorno
+.env
+.env.*
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/

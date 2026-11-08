@@ -1,0 +1,18 @@
+{
+  "name": "corrientazo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plataformero 2D de navegador para divulgar seguridad eléctrica.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.6"
+  }
+}
