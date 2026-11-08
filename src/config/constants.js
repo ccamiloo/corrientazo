@@ -61,7 +61,7 @@ export const PARALLAX = {
 };
 
 // --- Interacción ---
-export const INTERACT_RADIUS = 28; // px, distancia (centro a centro, en X) para mostrar la "E"
+export const INTERACT_RADIUS = 28; // px, distancia (centro a centro, en X) para mostrar el indicador de interacción
 
 // --- Controles ---
 // Nombres de tecla de Phaser (Phaser.Input.Keyboard.KeyCodes). Cada acción acepta varias teclas.
@@ -69,7 +69,7 @@ export const CONTROLS = {
   left: ['A', 'LEFT'],
   right: ['D', 'RIGHT'],
   jump: ['SPACE', 'W', 'UP'],
-  interact: ['E'],
+  interact: ['S', 'DOWN'], // "abajo": como entrar/revisar, típico de plataformeros
   confirm: ['ENTER'],
   debug: ['F1'],
 };

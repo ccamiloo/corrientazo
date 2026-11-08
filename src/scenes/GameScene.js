@@ -174,8 +174,8 @@ export class GameScene extends Phaser.Scene {
 
     if (this.controls.justDown('debug')) this.debug.toggle();
 
-    // --- Interacción con E ---
-    // Una sola consulta por frame: si hay diálogo abierto, E avanza; si no, interactúa con lo más cercano.
+    // --- Interacción (tecla abajo) ---
+    // Una sola consulta por frame: si hay diálogo abierto, la tecla avanza; si no, interactúa con lo más cercano.
     const interactPressed = this.controls.justDown('interact');
     let nearest = null;
     if (!this.dialog.isOpen) {

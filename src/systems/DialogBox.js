@@ -1,7 +1,7 @@
 import { GAME_W, GAME_H, DEPTH, COLORS, FONT } from '../config/constants.js';
 
 // Caja de diálogo fija a la cámara, en la parte inferior de la pantalla.
-// Uso: open(lines, onClose) → advance() con cada E → al pasar la última línea se cierra y llama onClose.
+// Uso: open(lines, onClose) → advance() con cada pulsación de interactuar → al pasar la última línea se cierra y llama onClose.
 export class DialogBox {
   constructor(scene) {
     this.scene = scene;
@@ -71,7 +71,7 @@ export class DialogBox {
 
   render() {
     this.text.setText(this.lines[this.index]);
-    // En la última línea el indicador cambia a "■" para señalar que E cierra.
+    // En la última línea el indicador cambia a "■" para señalar que la próxima pulsación cierra.
     this.arrow.setText(this.index < this.lines.length - 1 ? '▼' : '■');
   }
 }

@@ -65,8 +65,16 @@ export class PreloadScene extends Phaser.Scene {
       gr.fillStyle(0x0b0d12).fillRect(2, 12, 2, 2).fillRect(5, 12, 2, 2).fillRect(8, 12, 2, 2);
     });
 
-    make('prompt-e', 11, 11, (gr, w, h) => {
+    // Indicador de interacción: cuadrito claro con una flecha hacia abajo (la tecla para interactuar).
+    // La flecha va dibujada a mano en vez de con texto '↓' para que sea pixel art nítido a 8 px.
+    make('prompt-down', 11, 11, (gr, w, h) => {
       gr.fillStyle(COLORS.prompt).fillRect(0, 0, w, h);
+      gr.fillStyle(0x0b0d12)
+        .fillRect(4, 2, 3, 4) // tallo
+        .fillRect(2, 6, 7, 1) // punta, de ancha a angosta
+        .fillRect(3, 7, 5, 1)
+        .fillRect(4, 8, 3, 1)
+        .fillRect(5, 9, 1, 1);
     });
 
     g.destroy();

@@ -21,7 +21,7 @@ npm run preview   # sirve el build para probarlo
 | --- | --- |
 | Moverse | A / D, ← / → |
 | Saltar (mantén para saltar más alto) | Espacio, W, ↑ |
-| Interactuar / avanzar diálogo | E |
+| Interactuar / avanzar diálogo | S / ↓ |
 | Elegir personaje | ← / → y Enter |
 | Modo debug (hitboxes + timer) | F1 |
 
@@ -46,13 +46,13 @@ src/
 │       └── testRoom.js         Habitación de prueba: layout + posiciones + diálogos
 ├── entities/
 │   ├── Player.js               Jugador: aceleración, salto variable, coyote time, jump buffer
-│   ├── Interactable.js         Objeto con indicador "E" (base del NPC y del teléfono)
+│   ├── Interactable.js         Objeto con indicador de interacción (base del NPC y del teléfono)
 │   ├── Npc.js                  NPC con diálogo que cambia según flags
 │   └── Hazard.js               Obstáculo peligroso movido por tween
 ├── systems/
 │   ├── Controls.js             Agrupa teclas por acción (jump = Espacio/W/↑)
 │   ├── RoomBuilder.js          Convierte el layout de texto en tiles + colisiones fusionadas
-│   ├── DialogBox.js            Caja de diálogo inferior que avanza con E
+│   ├── DialogBox.js            Caja de diálogo inferior que avanza con S/↓
 │   ├── RoomFlags.js            Flags por habitación (p. ej. "technicianCalled")
 │   ├── PlayTimer.js            Timer global de juego
 │   └── DebugOverlay.js         Panel F1: timer, posición, velocidad + hitboxes
@@ -106,7 +106,7 @@ Cada sala es un archivo en `src/data/rooms/` y se registra en `index.js`.
 
 ## Cambiar placeholders por arte
 
-Las entidades solo conocen *keys* de textura: `player-0..2`, `tile`, `npc`, `hazard`, `phone` y `prompt-e`. Hoy `PreloadScene` las dibuja con `Graphics.generateTexture`. Para meter arte:
+Las entidades solo conocen *keys* de textura: `player-0..2`, `tile`, `npc`, `hazard`, `phone` y `prompt-down`. Hoy `PreloadScene` las dibuja con `Graphics.generateTexture`. Para meter arte:
 
 1. Pon los archivos en `public/assets/`.
 2. En `PreloadScene`, reemplaza el `make(...)` de esa key por `this.load.image(key, ...)` o por `this.load.spritesheet(key, ...)`, en un `preload()`.
