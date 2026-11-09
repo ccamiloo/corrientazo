@@ -2,7 +2,8 @@ import * as Phaser from 'phaser';
 import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS, animKey } from '../data/characters.js';
-import { APPLIANCES, applianceKey } from '../data/appliances.js';
+import { APPLIANCES, applianceKey, propKey } from '../data/appliances.js';
+import { ROOMS } from '../data/rooms/index.js';
 
 // Carga de assets. Los fondos y los personajes con arte se cargan desde archivo; el resto del greybox
 // se genera por código.
@@ -29,12 +30,36 @@ export class PreloadScene extends Phaser.Scene {
     // Personajes con arte: spritesheet + JSON con sus animaciones. El tamaño de frame sale del JSON,
     // pero el loader del spritesheet lo necesita antes de leerlo; por eso encadenamos: primero el JSON
     // y, cuando llega, encolamos el PNG (el loader sigue abierto mientras haya archivos pendientes).
+    this.loadRoomArt();
+
     for (const c of CHARACTERS.filter((ch) => ch.sheet)) {
       const dataKey = `${c.texture}-data`;
       this.load.json(dataKey, c.sheet.data);
       this.load.once(`filecomplete-json-${dataKey}`, (key, type, data) => {
         this.load.spritesheet(c.texture, c.sheet.image, { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
       });
+    }
+  }
+
+  // Arte de las salas que lo declaran (campo `art`): pared y estructura como imágenes del tamaño de la sala,
+  // y props (aparatos, puerta) como spritesheets descritos en un props.json. Mismo encadenamiento que los
+  // personajes: el JSON trae el tamaño de frame que el spritesheet necesita antes de cargarse.
+  loadRoomArt() {
+    for (const room of Object.values(ROOMS)) {
+      const art = room.art;
+      if (!art) continue;
+      if (art.wall) this.load.image(`${room.id}-wall`, art.wall);
+      if (art.tiles) this.load.image(`${room.id}-tiles`, art.tiles);
+      if (art.props) {
+        const dataKey = `${room.id}-props`;
+        const dir = art.props.slice(0, art.props.lastIndexOf('/') + 1);
+        this.load.json(dataKey, art.props);
+        this.load.once(`filecomplete-json-${dataKey}`, (key, type, props) => {
+          for (const [name, p] of Object.entries(props)) {
+            this.load.spritesheet(propKey(name), dir + p.image, { frameWidth: p.frameWidth, frameHeight: p.frameHeight });
+          }
+        });
+      }
     }
   }
 

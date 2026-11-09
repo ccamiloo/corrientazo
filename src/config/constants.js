@@ -74,6 +74,7 @@ export const BACKGROUND_SOURCES = {
   park: 'backgrounds_sin_bruma',
   market: 'backgrounds_sin_bruma',
   construction: 'backgrounds', // con bruma
+  house: 'backgrounds', // amanecer del nivel 1 (solo existe en esta carpeta)
 };
 export const BACKGROUNDS = Object.keys(BACKGROUND_SOURCES); // orden del ciclo de F2
 

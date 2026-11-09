@@ -24,7 +24,12 @@ export function buildRoom(scene, room) {
   const { cols, rows } = roomSize(room);
 
   // 1) Visual
-  for (let r = 0; r < rows; r++) {
+  // Si la sala trae su estructura dibujada como una sola imagen (art.tiles), se usa esa y no se dibuja
+  // tile por tile (ni las decoraciones como las columnas, que ya vienen en el arte). La colisión no cambia.
+  const tilesKey = `${room.id}-tiles`;
+  const tilesArt = room.art?.tiles && scene.textures.exists(tilesKey);
+  if (tilesArt) scene.add.image(0, 0, tilesKey).setOrigin(0).setDepth(DEPTH.tiles);
+  for (let r = 0; r < rows && !tilesArt; r++) {
     for (let c = 0; c < cols; c++) {
       const ch = layout[r][c];
       const key = SOLID_TILES[ch] ?? DECOR_TILES[ch];

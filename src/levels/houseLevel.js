@@ -3,7 +3,7 @@ import { Interactable } from '../entities/Interactable.js';
 import { tileToFeet } from '../systems/RoomBuilder.js';
 import { TutorialHints } from '../systems/TutorialHints.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
-import { applianceKey } from '../data/appliances.js';
+import { APPLIANCES, applianceKey, propKey } from '../data/appliances.js';
 import { houseDialogs as D } from '../data/dialogs/house.js';
 
 // Nivel 1: la casa (tutorial). No hay peligros: no se puede morir.
@@ -32,12 +32,30 @@ export function createHouseLevel(scene) {
     });
   };
 
-  // --- Pared interior (greybox): detrás de los pisos 1 y 2, delante del fondo de la ciudad ---
-  const inner = room.interior;
-  scene.add
-    .rectangle(inner.x * TILE, inner.y * TILE, inner.w * TILE, inner.h * TILE, COLORS.interior)
-    .setOrigin(0)
-    .setDepth(DEPTH.interior);
+  // --- Pared del fondo: delante del parallax, detrás de los tiles ---
+  // Con arte es una imagen del tamaño de la sala en (0, 0); ventanas y cielo de la terraza son
+  // transparentes y dejan ver el parallax. Sin arte, un rectángulo oscuro en la zona interior (greybox).
+  const wallKey = `${room.id}-wall`;
+  if (scene.textures.exists(wallKey)) {
+    scene.add.image(0, 0, wallKey).setOrigin(0).setDepth(DEPTH.interior);
+  } else {
+    const inner = room.interior;
+    scene.add
+      .rectangle(inner.x * TILE, inner.y * TILE, inner.w * TILE, inner.h * TILE, COLORS.interior)
+      .setOrigin(0)
+      .setDepth(DEPTH.interior);
+  }
+
+  // Aspecto de un objeto con dos estados (aparato encendido/desconectado, puerta cerrada/abierta).
+  // Con arte: spritesheet del prop, frame 0 = estado inicial, frame 1 = estado final.
+  // Sin arte: dos texturas placeholder. `create` son los argumentos de textura para el constructor.
+  const look = (sprite, placeholderOn, placeholderOff) => {
+    const key = sprite && propKey(sprite);
+    if (key && scene.textures.exists(key)) {
+      return { key, frame: 0, setDone: (obj) => obj.setFrame(1) };
+    }
+    return { key: placeholderOn, frame: undefined, setDone: (obj) => obj.setTexture(placeholderOff) };
+  };
 
   // --- HUD del objetivo ---
   const hud = scene.add
@@ -86,7 +104,9 @@ export function createHouseLevel(scene) {
 
   // --- Puerta de salida ---
   const doorData = room.door;
-  const door = new Interactable(scene, (doorData.x + doorData.w / 2) * TILE, doorData.y * TILE, 'door-closed', {
+  const doorLook = look(doorData.sprite, 'door-closed', 'door-open');
+  const door = new Interactable(scene, (doorData.x + doorData.w / 2) * TILE, doorData.y * TILE, doorLook.key, {
+    frame: doorLook.frame,
     onInteract: () => say(D.door.locked),
   });
   // Cerrada es un sólido estático (bloquea el paso). Al abrirla se desactiva su body con
@@ -97,7 +117,7 @@ export function createHouseLevel(scene) {
   const openDoor = () => {
     if (doorOpen) return;
     doorOpen = true;
-    door.setTexture('door-open');
+    doorLook.setDone(door);
     scene.physics.world.disable(door);
     door.radius = -1; // abierta ya no muestra el indicador: se cruza caminando
   };
@@ -105,13 +125,15 @@ export function createHouseLevel(scene) {
   // --- Aparatos ---
   const appliances = room.appliances.map((a) => {
     const pos = tileToFeet(a);
-    const it = new Interactable(scene, pos.x, pos.y, applianceKey(a.kind, true), {
+    const aLook = look(APPLIANCES[a.kind].sprite, applianceKey(a.kind, true), applianceKey(a.kind, false));
+    const it = new Interactable(scene, pos.x, pos.y, aLook.key, {
+      frame: aLook.frame,
       // Solo responde después de la lección de la abuela y mientras siga conectado.
       canInteract: () => !!scene.flag('talkedToGrandma') && !scene.flag(`unplugged_${a.id}`),
       onInteract: () => {
         // El flag se marca antes del diálogo para que el conteo ya incluya este aparato.
         scene.setFlag(`unplugged_${a.id}`);
-        it.setTexture(applianceKey(a.kind, false));
+        aLook.setDone(it);
         refreshHud();
         const done = count() === total;
         // El último aparato agrega la línea de "todo desconectado" después de la suya.
@@ -121,7 +143,7 @@ export function createHouseLevel(scene) {
       },
     });
     // Estado inicial según flags (por si la escena se reinicia a mitad del nivel).
-    if (scene.flag(`unplugged_${a.id}`)) it.setTexture(applianceKey(a.kind, false));
+    if (scene.flag(`unplugged_${a.id}`)) aLook.setDone(it);
     return it;
   });
 

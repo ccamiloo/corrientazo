@@ -34,7 +34,7 @@
 
 export const house = {
   id: 'house',
-  background: 'street', // se ve desde la terraza
+  background: 'house', // parallax del amanecer (se ve desde la terraza y por las ventanas)
   script: 'house', // lógica del nivel: src/levels/houseLevel.js
 
   layout: [
@@ -69,7 +69,17 @@ export const house = {
     '############################################################', // 28 4 filas de suelo bajo el piso 1
   ],
 
-  // Zona interior de la casa (pared del fondo, pisos 1 y 2). En el greybox se pinta un rectángulo oscuro.
+  // Arte de la sala (public/assets/rooms/house/, ver README.txt ahí). Ambas imágenes miden lo mismo que
+  // la sala (960x464) y van en (0, 0) del mundo. `tiles` reemplaza el dibujo tile por tile (la colisión
+  // sigue saliendo del layout); `props` trae los sprites de aparatos y puerta.
+  art: {
+    wall: 'assets/rooms/house/house_wall.png', // pared del fondo, depth -50
+    tiles: 'assets/rooms/house/house_tiles.png', // estructura sólida, depth 0
+    props: 'assets/props/house/props.json',
+  },
+
+  // Zona interior de la casa (pared del fondo, pisos 1 y 2). Solo se usa si no cargó `art.wall`:
+  // entonces se pinta un rectángulo oscuro (greybox).
   interior: { x: 1, y: 10, w: 58, h: 15 },
 
   spawn: { x: 30, y: 17 }, // piso 2, habitación
@@ -89,7 +99,8 @@ export const house = {
   ],
 
   // Puerta de salida: x = columna izquierda, w x h en tiles. Cerrada bloquea el paso.
-  door: { x: 57, y: 25, w: 2, h: 3 },
+  // `sprite`: prop con arte (frame 0 cerrada, frame 1 abierta).
+  door: { x: 57, y: 25, w: 2, h: 3, sprite: 'puerta' },
 
   // Avisos del tutorial: aparecen una sola vez. `trigger: 'start'` al entrar; si no, al pisar la zona.
   // `requires`: flag de misión necesario para que el aviso pueda aparecer.
