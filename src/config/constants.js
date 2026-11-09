@@ -105,6 +105,13 @@ export const CONTROLS = {
   confirm: ['ENTER'],
   debug: ['F1'],
   cycleBackground: ['F2'], // debug: cambia el fondo de la sala entre los de BACKGROUNDS
+  devMenu: ['F3'], // desarrollo: abre el menú de salas (solo si DEV.menu)
+};
+
+// --- Desarrollo ---
+// TEMPORAL: interruptores de herramientas de desarrollo. Al terminar el juego, ponerlos en false.
+export const DEV = {
+  menu: true, // F3 abre el menú para entrar directo a cualquier sala (DevMenuScene)
 };
 
 // --- Profundidades de dibujo (mayor = encima) ---

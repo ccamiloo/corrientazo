@@ -1,10 +1,9 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
+import { GAME_W, GAME_H, COLORS, FONT, DEV } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { START_ROOM } from '../data/rooms/index.js';
-import { PlayTimer } from '../systems/PlayTimer.js';
-import { RoomFlags } from '../systems/RoomFlags.js';
 import { Controls } from '../systems/Controls.js';
+import { startNewGame } from '../systems/startGame.js';
 
 export class CharacterSelectScene extends Phaser.Scene {
   constructor() {
@@ -47,6 +46,14 @@ export class CharacterSelectScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // TEMPORAL (desarrollo): acceso al menú de salas.
+    if (DEV.menu) {
+      this.add
+        .text(GAME_W / 2, GAME_H - 8, 'F3: menú de desarrollo', { fontFamily: FONT, fontSize: '8px', color: COLORS.textDim })
+        .setOrigin(0.5)
+        .setAlpha(0.6);
+    }
+
     this.refresh();
   }
 
@@ -69,12 +76,15 @@ export class CharacterSelectScene extends Phaser.Scene {
       this.index = (this.index + 1) % n;
       this.refresh();
     }
-    if (this.controls.justDown('confirm')) {
+    const confirm = this.controls.justDown('confirm');
+    const devMenu = this.controls.justDown('devMenu');
+    if (confirm) {
       this.registry.set('characterIndex', this.index);
-      // Partida nueva: el timer global arranca en 0 y los flags de las salas se limpian.
-      PlayTimer.start(this.registry);
-      RoomFlags.reset(this.registry);
-      this.scene.start('Game', { roomId: START_ROOM });
+      startNewGame(this, START_ROOM);
+    } else if (devMenu && DEV.menu) {
+      // El menú entra con el personaje que esté marcado en este momento.
+      this.registry.set('characterIndex', this.index);
+      this.scene.start('DevMenu');
     }
   }
 }

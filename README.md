@@ -25,6 +25,7 @@ npm run preview   # sirve el build para probarlo
 | Elegir personaje | ← / → y Enter |
 | Modo debug (hitboxes + timer) | F1 |
 | Cambiar el fondo de la sala (debug) | F2 |
+| Menú de desarrollo: entrar a cualquier sala (temporal) | F3 |
 
 ## Stack
 

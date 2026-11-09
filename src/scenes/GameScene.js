@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, PLAYER, CAMERA } from '../config/constants.js';
+import { GAME_W, GAME_H, PLAYER, CAMERA, DEV } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { LEVELS } from '../levels/index.js';
@@ -117,6 +117,11 @@ export class GameScene extends Phaser.Scene {
     if (this.controls.justDown('cycleBackground')) {
       this.background.cycle();
       console.info(`[Parallax] fondo: ${this.background.name}`);
+    }
+    // F3 (desarrollo): volver al menú de salas.
+    if (this.controls.justDown('devMenu') && DEV.menu) {
+      this.scene.start('DevMenu');
+      return;
     }
 
     // --- Interacción (tecla abajo) ---

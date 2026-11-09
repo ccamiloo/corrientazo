@@ -5,6 +5,7 @@ import { PreloadScene } from './scenes/PreloadScene.js';
 import { CharacterSelectScene } from './scenes/CharacterSelectScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { GameOverScene } from './scenes/GameOverScene.js';
+import { DevMenuScene } from './scenes/DevMenuScene.js';
 
 const config = {
   // AUTO elige WebGL (en Phaser 4 el renderer Canvas está deprecado).
@@ -38,7 +39,7 @@ const config = {
     },
   },
 
-  scene: [BootScene, PreloadScene, CharacterSelectScene, GameScene, GameOverScene],
+  scene: [BootScene, PreloadScene, CharacterSelectScene, GameScene, GameOverScene, DevMenuScene],
 };
 
 const game = new Phaser.Game(config);
