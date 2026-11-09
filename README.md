@@ -108,7 +108,7 @@ Cada sala es un archivo en `src/data/rooms/` y se registra en `index.js`.
 
 ## Cambiar placeholders por arte
 
-Las entidades solo conocen *keys* de textura: `player-0..2`, `tile`, `npc`, `hazard`, `phone` y `prompt-down`. Hoy `PreloadScene` las dibuja con `Graphics.generateTexture`. Para meter arte:
+Las entidades solo conocen *keys* de textura: `moises` (spritesheet real, con sus animaciones definidas en `public/assets/characters/moises.json`), `player-1..2`, `tile`, `npc`, `hazard`, `phone` y `prompt-down`. Salvo `moises`, hoy `PreloadScene` las dibuja con `Graphics.generateTexture`. Para meter arte:
 
 1. Pon los archivos en `public/assets/`.
 2. En `PreloadScene`, reemplaza el `make(...)` de esa key por `this.load.image(key, ...)` o por `this.load.spritesheet(key, ...)`, en un `preload()`.

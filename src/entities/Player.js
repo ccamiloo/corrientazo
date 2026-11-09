@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { MOVE, PLAYER, DEPTH } from '../config/constants.js';
+import { MOVE, PLAYER, DEPTH, ANIM } from '../config/constants.js';
+import { animKey } from '../data/characters.js';
 
 // Mueve `current` hacia `target` como máximo `step` unidades, sin pasarse.
 function approach(current, target, step) {
@@ -19,12 +20,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.controls = controls;
     this.setDepth(DEPTH.player);
 
-    // Hitbox de tamaño entero e igual al placeholder. Con sprites reales probablemente se ajuste con setSize/setOffset.
-    this.body.setSize(PLAYER.width, PLAYER.height);
+    // Hitbox fija de PLAYER.width x PLAYER.height (16x32), centrada en X dentro del frame y pegada abajo.
+    // Con el spritesheet de 24x32 → offset (4, 0); con el placeholder de 16x32 → (0, 0).
+    // Así la física es idéntica para todos los personajes, sin importar el ancho del arte.
+    this.body.setSize(PLAYER.width, PLAYER.height, false);
+    this.body.setOffset((this.width - PLAYER.width) / 2, this.height - PLAYER.height);
     this.body.setCollideWorldBounds(true);
     this.body.setGravityY(MOVE.gravity);
     // La velocidad horizontal la limitamos a mano; aquí solo acotamos la caída.
     this.body.setMaxVelocity(10000, MOVE.maxFallSpeed);
+
+    // Animaciones: solo si la textura tiene las suyas (Moisés). Los placeholders son una imagen fija.
+    this.textureBase = textureKey;
+    this.animated = scene.anims.exists(animKey(textureKey, 'idle'));
+    this.dead = false;
 
     this.frozen = false;
     this.lastGroundedAt = -Infinity; // ms, último instante en que tocó suelo (coyote time)
@@ -43,6 +52,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // Olvidamos saltos pendientes para que no salte solo al cerrar el diálogo.
       this.jumpPressedAt = -Infinity;
     }
+  }
+
+  // Muerte por descarga: congela al jugador en el sitio (sin gravedad ni velocidad), reproduce
+  // 'shock' completo (termina en el frame chamuscado) y recién entonces llama onDone.
+  // Sin animaciones (placeholder) llama onDone de inmediato, como antes.
+  electrocute(onDone) {
+    if (this.dead) return;
+    this.dead = true;
+    this.setFrozen(true);
+    this.body.stop();
+    this.body.moves = false; // ni gravedad ni colisiones lo desplazan mientras se electrocuta
+
+    const key = animKey(this.textureBase, 'shock');
+    if (!this.animated || !this.scene.anims.exists(key)) {
+      onDone();
+      return;
+    }
+    this.anims.timeScale = 1; // la caminata pudo dejarlo acelerado o frenado
+    this.once(`animationcomplete-${key}`, onDone);
+    this.play(key);
   }
 
   respawn(x, y) {
@@ -108,5 +137,37 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // --- Gravedad asimétrica: cae más rápido de lo que sube ---
     body.setGravityY(body.velocity.y > 0 ? MOVE.gravity * MOVE.fallGravityMultiplier : MOVE.gravity);
+
+    this.updateAnimation(grounded);
+  }
+
+  // Elige la animación según el estado físico. La dirección (flipX) ya la fijó update() con la entrada,
+  // así que al quedarse quieto conserva la última.
+  updateAnimation(grounded) {
+    if (!this.animated || this.dead) return;
+    const { velocity } = this.body;
+    const speed = Math.abs(velocity.x);
+
+    // En el frame en que salta, blocked.down sigue en true hasta el próximo paso de física; por eso
+    // "subiendo" (vy < 0) manda sobre "en el suelo" y la animación de salto arranca sin un frame de retraso.
+    let name;
+    if (velocity.y < 0) name = 'jump';
+    else if (grounded) name = speed > ANIM.walkMinSpeed ? 'walk' : 'idle';
+    else name = 'fall';
+
+    const key = animKey(this.textureBase, name);
+    // ignoreIfPlaying = true: si ya está en esa animación no la reinicia. Al ENTRAR a walk desde otra,
+    // play arranca desde el primer frame de la animación (walk_1), nunca a mitad del ciclo.
+    this.play(key, true);
+
+    if (name === 'walk') {
+      // Ritmo proporcional a la velocidad: fps deseado = |vx| · frames / pxPorCiclo. timeScale escala el
+      // frameRate de referencia de la animación (el del JSON) hasta ese valor.
+      const anim = this.anims.currentAnim;
+      const fps = (speed * anim.frames.length) / ANIM.walkPxPerCycle;
+      this.anims.timeScale = fps / anim.frameRate;
+    } else {
+      this.anims.timeScale = 1;
+    }
   }
 }

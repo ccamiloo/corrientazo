@@ -27,13 +27,16 @@ export class CharacterSelectScene extends Phaser.Scene {
     const baseY = 160;
     this.slots = CHARACTERS.map((c, i) => {
       const x = GAME_W / 2 + (i - 1) * spacing;
-      const sprite = this.add.image(x, baseY, c.texture).setScale(2);
+      // Con spritesheet hay que pedir un frame (0 = idle); sin frame Phaser mostraría la hoja entera.
+      const sprite = this.add.image(x, baseY, c.texture, c.sheet ? 0 : undefined).setScale(2);
       const label = this.add
-        .text(x, baseY + 44, c.name, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
+        .text(x, baseY + 48, c.name, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
         .setOrigin(0.5);
       return { x, sprite, label };
     });
-    this.cursor = this.add.rectangle(0, baseY, 48, 80).setStrokeStyle(1, 0xffffff).setFillStyle();
+    // Marco un poco más ancho que el sprite más ancho (Moisés x2 = 48 px) para que no le pise los bordes.
+    const cursorW = Math.max(...this.slots.map((s) => s.sprite.displayWidth)) + 8;
+    this.cursor = this.add.rectangle(0, baseY, cursorW, 80).setStrokeStyle(1, 0xffffff).setFillStyle();
 
     this.add
       .text(GAME_W / 2, GAME_H - 20, '← → para elegir   ·   Enter para confirmar', {

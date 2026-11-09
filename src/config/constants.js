@@ -35,6 +35,17 @@ export const MOVE = {
   jumpBufferMs: 100, // ms en que se "recuerda" un salto presionado justo antes de aterrizar
 };
 
+// --- Animación del personaje ---
+export const ANIM = {
+  // Ritmo de la caminata sincronizado con la velocidad: un ciclo de walk (4 frames) corresponde a
+  // walkPxPerCycle px recorridos. frameRate = |vx| · framesDelCiclo / walkPxPerCycle.
+  // Con maxSpeed 130 y 32 px → 130 · 4 / 32 ≈ 16 fps a velocidad máxima (más lento al acelerar/frenar).
+  walkPxPerCycle: 32,
+  // px/s; por debajo de esto en el suelo se considera "quieto" (idle). Evita que al frenar se vea
+  // un paso a cámara lenta durante los últimos frames de la desaceleración.
+  walkMinSpeed: 10,
+};
+
 // --- Cámara ---
 export const CAMERA = {
   lerpX: 0.15, // 0..1, suavizado horizontal (1 = sigue pegada, más bajo = más suave)

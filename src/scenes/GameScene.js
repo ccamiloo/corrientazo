@@ -126,7 +126,9 @@ export class GameScene extends Phaser.Scene {
     if (this.isDying) return;
     this.isDying = true;
     PlayTimer.pause(this.registry);
-    this.scene.start('GameOver', { roomId: this.roomId });
+    // El jugador se congela y reproduce la descarga completa; recién al terminar pasamos a Game Over.
+    // Mientras tanto update() sale temprano (isDying), así que no hay entrada ni interacción.
+    this.player.electrocute(() => this.scene.start('GameOver', { roomId: this.roomId }));
   }
 
   update(time, delta) {

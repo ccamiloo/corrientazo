@@ -1,11 +1,12 @@
 import * as Phaser from 'phaser';
 import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
-import { CHARACTERS } from '../data/characters.js';
+import { CHARACTERS, animKey } from '../data/characters.js';
 
-// Carga de assets. Los fondos se cargan desde archivo; el resto del greybox se genera por código.
+// Carga de assets. Los fondos y los personajes con arte se cargan desde archivo; el resto del greybox
+// se genera por código.
 //
-// Clave del diseño: el resto del juego solo conoce las *keys* de textura ('player-0', 'tile', 'hazard'...).
+// Clave del diseño: el resto del juego solo conoce las *keys* de textura ('moises', 'tile', 'hazard'...).
 // Cuando llegue el arte, este preload() pasará a hacer this.load.image / this.load.spritesheet
 // con esas mismas keys y nada más del código tendrá que cambiar.
 export class PreloadScene extends Phaser.Scene {
@@ -23,9 +24,39 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image(bgKey(bg, layer.id), `${PARALLAX.basePath}${BACKGROUND_SOURCES[bg]}/${bg}/${layer.file}`);
       }
     }
+
+    // Personajes con arte: spritesheet + JSON con sus animaciones. El tamaño de frame sale del JSON,
+    // pero el loader del spritesheet lo necesita antes de leerlo; por eso encadenamos: primero el JSON
+    // y, cuando llega, encolamos el PNG (el loader sigue abierto mientras haya archivos pendientes).
+    for (const c of CHARACTERS.filter((ch) => ch.sheet)) {
+      const dataKey = `${c.texture}-data`;
+      this.load.json(dataKey, c.sheet.data);
+      this.load.once(`filecomplete-json-${dataKey}`, (key, type, data) => {
+        this.load.spritesheet(c.texture, c.sheet.image, { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
+      });
+    }
+  }
+
+  // Crea las animaciones de cada personaje a partir de su JSON. El frameRate de walk es el de referencia;
+  // Player lo escala en vivo con la velocidad (ver ANIM en constants.js).
+  createCharacterAnims() {
+    for (const c of CHARACTERS.filter((ch) => ch.sheet)) {
+      const data = this.cache.json.get(`${c.texture}-data`);
+      if (!data || !this.textures.exists(c.texture)) continue;
+      for (const [name, a] of Object.entries(data.animations)) {
+        this.anims.create({
+          key: animKey(c.texture, name),
+          frames: this.anims.generateFrameNumbers(c.texture, { frames: a.frames }),
+          frameRate: a.frameRate,
+          repeat: a.repeat,
+        });
+      }
+    }
   }
 
   create() {
+    this.createCharacterAnims();
+
     // Graphics fuera de la lista de display (no se dibuja): solo lo usamos como "pincel".
     const g = this.make.graphics({ x: 0, y: 0 }, false);
 
@@ -43,7 +74,7 @@ export class PreloadScene extends Phaser.Scene {
 
     // Jugadores: rectángulo de color con una franja más clara arriba (indica hacia dónde está la "cabeza")
     // y un ojo a la derecha, para que se note el flipX al girar.
-    CHARACTERS.forEach((c) => {
+    CHARACTERS.filter((c) => !c.sheet).forEach((c) => {
       make(c.texture, PLAYER.width, PLAYER.height, (gr, w, h) => {
         gr.fillStyle(c.color).fillRect(0, 0, w, h);
         gr.fillStyle(0xffffff, 0.35).fillRect(0, 0, w, 4);
