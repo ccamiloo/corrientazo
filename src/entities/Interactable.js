@@ -3,8 +3,10 @@ import { DEPTH, INTERACT_RADIUS } from '../config/constants.js';
 
 // Objeto con el que se interactúa (tecla abajo). Muestra un indicador con flecha encima cuando el jugador está cerca.
 // `onInteract` lo define quien lo crea (la escena), así esta clase no sabe nada de diálogos ni flags.
+// `canInteract` (opcional): función que dice si hoy se puede interactuar; si devuelve false, el objeto
+// no muestra el indicador ni responde (p. ej. la abuela antes de hablar con papá).
 export class Interactable extends Phaser.GameObjects.Image {
-  constructor(scene, x, y, textureKey, { onInteract, radius = INTERACT_RADIUS } = {}) {
+  constructor(scene, x, y, textureKey, { onInteract, radius = INTERACT_RADIUS, canInteract = () => true } = {}) {
     super(scene, x, y, textureKey);
     scene.add.existing(this);
     this.setOrigin(0.5, 1); // origen en los pies: x,y = punto de apoyo en el suelo
@@ -12,6 +14,7 @@ export class Interactable extends Phaser.GameObjects.Image {
 
     this.onInteract = onInteract;
     this.radius = radius;
+    this.canInteract = canInteract;
 
     // Indicador: textura generada en PreloadScene (cuadrito con flecha hacia abajo).
     // Se guarda en un array para que el tween y setPromptVisible sigan funcionando si se le suman piezas.
@@ -25,6 +28,7 @@ export class Interactable extends Phaser.GameObjects.Image {
 
   // Distancia horizontal desde el jugador y misma "altura" aproximada (evita activar desde una plataforma de arriba).
   isInRange(player) {
+    if (!this.canInteract()) return false;
     const dx = Math.abs(player.x - this.x);
     const dy = Math.abs(player.body.bottom - this.y);
     return dx <= this.radius && dy <= 8;

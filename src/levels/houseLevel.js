@@ -9,16 +9,20 @@ import { houseDialogs as D } from '../data/dialogs/house.js';
 // Nivel 1: la casa (tutorial). No hay peligros: no se puede morir.
 //
 // Misión (flags de la sala, persisten en el registry):
-//   talkedToDad        → habilita el diálogo de la abuela
-//   talkedToGrandma    → activa el objetivo "Desconectar: n/5" y deja desconectar los aparatos
-//   unplugged_<id>     → aparato desconectado
+//   talkedToDad        → recién entonces se puede hablar con la abuela
+//   talkedToGrandma    → activa el objetivo "Desconectar: n/5"; recién entonces responden los aparatos
+//   unplugged_<id>     → aparato desconectado (deja de responder)
+// Lo que todavía no toca no muestra el indicador ni responde (Interactable.canInteract).
 // Con todos desconectados se abre la puerta; al cruzarla termina el nivel.
 export function createHouseLevel(scene) {
   const { room, dialog, player } = scene;
   const total = room.appliances.length;
 
   const count = () => room.appliances.filter((a) => scene.flag(`unplugged_${a.id}`)).length;
-  const fill = (lines) => lines.map((l) => l.replaceAll('{n}', count()).replaceAll('{total}', total));
+  const fill = (lines) =>
+    lines.map((l) =>
+      l.replaceAll('{n}', count()).replaceAll('{total}', total).replaceAll('{left}', total - count()),
+    );
   // Abre un diálogo con el jugador congelado y lo descongela al cerrarlo.
   const say = (lines, onClose) => {
     scene.freeze();
@@ -55,26 +59,29 @@ export function createHouseLevel(scene) {
   // --- NPCs ---
   const dad = makeNpc('dad', () => {
     if (!scene.flag('talkedToDad')) say(D.dad.first, () => scene.setFlag('talkedToDad'));
-    else if (!scene.flag('talkedToGrandma')) say(D.dad.waiting);
-    else if (count() < total) say(D.dad.mission);
+    else if (count() < total) say(D.dad.pending);
     else say(D.dad.done);
   });
 
-  const grandma = makeNpc('grandma', () => {
-    if (!scene.flag('talkedToDad')) say(D.grandma.locked);
-    else if (!scene.flag('talkedToGrandma')) {
-      say(D.grandma.first, () => {
-        scene.setFlag('talkedToGrandma');
-        refreshHud();
-      });
-    } else if (count() < total) say(D.grandma.mission);
-    else say(D.grandma.done);
-  });
+  // La abuela no responde hasta haber hablado con papá.
+  const grandma = makeNpc(
+    'grandma',
+    () => {
+      if (!scene.flag('talkedToGrandma')) {
+        say(D.grandma.lesson, () => {
+          scene.setFlag('talkedToGrandma');
+          refreshHud();
+        });
+      } else if (count() < total) say(D.grandma.pending);
+      else say(D.grandma.done);
+    },
+    () => !!scene.flag('talkedToDad'),
+  );
 
-  function makeNpc(id, onInteract) {
+  function makeNpc(id, onInteract, canInteract) {
     const data = room.npcs.find((n) => n.id === id);
     const pos = tileToFeet(data);
-    return new Interactable(scene, pos.x, pos.y, data.texture, { onInteract });
+    return new Interactable(scene, pos.x, pos.y, data.texture, { onInteract, canInteract });
   }
 
   // --- Puerta de salida ---
@@ -99,16 +106,17 @@ export function createHouseLevel(scene) {
   const appliances = room.appliances.map((a) => {
     const pos = tileToFeet(a);
     const it = new Interactable(scene, pos.x, pos.y, applianceKey(a.kind, true), {
+      // Solo responde después de la lección de la abuela y mientras siga conectado.
+      canInteract: () => !!scene.flag('talkedToGrandma') && !scene.flag(`unplugged_${a.id}`),
       onInteract: () => {
-        if (!scene.flag('talkedToDad')) return say(D.appliance.needDad);
-        if (!scene.flag('talkedToGrandma')) return say(D.appliance.needGrandma);
-        if (scene.flag(`unplugged_${a.id}`)) return say(D.appliance.already);
-        // El flag se marca antes del diálogo para que "{n}" ya incluya este aparato.
+        // El flag se marca antes del diálogo para que el conteo ya incluya este aparato.
         scene.setFlag(`unplugged_${a.id}`);
         it.setTexture(applianceKey(a.kind, false));
         refreshHud();
-        say(D.appliance.unplugged, () => {
-          if (count() === total) openDoor();
+        const done = count() === total;
+        // El último aparato agrega la línea de "todo desconectado" después de la suya.
+        say([...D.unplugged[a.id], ...(done ? D.allUnplugged : [])], () => {
+          if (done) openDoor();
         });
       },
     });
