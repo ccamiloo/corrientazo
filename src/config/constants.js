@@ -110,7 +110,8 @@ export const CONTROLS = {
 // --- Profundidades de dibujo (mayor = encima) ---
 export const DEPTH = {
   background: -100, // la capa i del parallax se dibuja en background + i (todas detrás de los tiles)
-  tiles: 0,
+  interior: -50, // pared interior de las salas techadas: delante del fondo, detrás de los tiles
+  tiles: 0, // las decoraciones del layout (columnas) van en tiles - 1
   props: 10,
   player: 20,
   prompt: 30,
@@ -124,6 +125,15 @@ export const COLORS = {
   tile: 0x2f3542,
   tileEdge: 0x47505f,
   npc: 0xb48ead,
+  npcDad: 0x6c8ebf,
+  npcGrandma: 0xd9a6c6,
+  step: 0x3b4252, // escalones (E)
+  roof: 0x5c4b3b, // techo de la terraza (T)
+  column: 0x8f8f8f, // columnas del techo (|)
+  interior: 0x1c1f27, // pared del fondo dentro de la casa
+  door: 0x8b5a2b,
+  doorOpen: 0x14161c, // vano de la puerta abierta
+  applianceOff: 0x5a5f69,
   outline: 0x000000, // borde de los personajes placeholder (para juzgar el contraste contra el fondo)
   hazard: 0xffd23f,
   phone: 0xd8dee9,

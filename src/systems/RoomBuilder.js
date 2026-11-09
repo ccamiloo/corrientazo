@@ -9,6 +9,12 @@ import { TILE, DEPTH } from '../config/constants.js';
 // muchos tiles apilados). Con un rectángulo por bloque continuo no hay uniones internas, y además
 // hay muchos menos bodies que revisar.
 
+// Leyenda del layout. Sólidos: tienen colisión y se fusionan entre sí sin importar el carácter.
+// Los demás caracteres visuales se dibujan pero no colisionan. '.' es vacío.
+const SOLID_TILES = { '#': 'tile', E: 'tile-step', T: 'tile-roof' };
+const DECOR_TILES = { '|': 'column' };
+export const isSolid = (ch) => ch in SOLID_TILES;
+
 export function roomSize(room) {
   return { cols: room.layout[0].length, rows: room.layout.length };
 }
@@ -20,9 +26,12 @@ export function buildRoom(scene, room) {
   // 1) Visual
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (layout[r][c] === '#') {
-        scene.add.image(c * TILE, r * TILE, 'tile').setOrigin(0).setDepth(DEPTH.tiles);
-      }
+      const ch = layout[r][c];
+      const key = SOLID_TILES[ch] ?? DECOR_TILES[ch];
+      if (!key) continue;
+      // Las decoraciones van detrás de los tiles sólidos (una columna no tapa el techo que sostiene).
+      const depth = ch in SOLID_TILES ? DEPTH.tiles : DEPTH.tiles - 1;
+      scene.add.image(c * TILE, r * TILE, key).setOrigin(0).setDepth(depth);
     }
   }
 
@@ -33,12 +42,12 @@ export function buildRoom(scene, room) {
     const next = new Map();
     let c = 0;
     while (c < cols) {
-      if (layout[r][c] !== '#') {
+      if (!isSolid(layout[r][c])) {
         c++;
         continue;
       }
       const start = c;
-      while (c < cols && layout[r][c] === '#') c++;
+      while (c < cols && isSolid(layout[r][c])) c++;
       const key = `${start}-${c}`;
       // ...y si la fila anterior tenía exactamente el mismo tramo, lo estiramos hacia abajo.
       const prev = open.get(key);
@@ -73,7 +82,7 @@ export function buildRoom(scene, room) {
 export function findGroundY(room) {
   const { layout } = room;
   let r = layout.length;
-  while (r > 0 && !layout[r - 1].includes('.')) r--;
+  while (r > 0 && [...layout[r - 1]].every(isSolid)) r--;
   if (r === layout.length) return tileToFeet(room.spawn).y;
   return r * TILE;
 }

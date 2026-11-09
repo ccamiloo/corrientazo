@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS, animKey } from '../data/characters.js';
+import { APPLIANCES, applianceKey } from '../data/appliances.js';
 
 // Carga de assets. Los fondos y los personajes con arte se cargan desde archivo; el resto del greybox
 // se genera por código.
@@ -94,6 +95,51 @@ export class PreloadScene extends Phaser.Scene {
       gr.fillStyle(0x0b0d12).fillRect(4, 7, 2, 3).fillRect(10, 7, 2, 3);
       outline(gr, w, h);
     });
+
+    // NPCs de la casa: mismo molde que 'npc', con otro color.
+    for (const [key, color] of [['npc-dad', COLORS.npcDad], ['npc-grandma', COLORS.npcGrandma]]) {
+      make(key, 16, 28, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(0x0b0d12).fillRect(4, 7, 2, 3).fillRect(10, 7, 2, 3);
+        outline(gr, w, h);
+      });
+    }
+
+    // Variantes del tile sólido para leer el layout: escalón (E) y techo (T).
+    for (const [key, color] of [['tile-step', COLORS.step], ['tile-roof', COLORS.roof]]) {
+      make(key, TILE, TILE, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
+      });
+    }
+    // Columna (|): decorativa, más angosta que el tile.
+    make('column', TILE, TILE, (gr) => {
+      gr.fillStyle(COLORS.column).fillRect(5, 0, 6, TILE);
+    });
+
+    // Puerta de salida (2x3 tiles): cerrada (madera con manija) y abierta (vano oscuro).
+    make('door-closed', 32, 48, (gr, w, h) => {
+      gr.fillStyle(COLORS.door).fillRect(0, 0, w, h);
+      gr.fillStyle(0xe8c547).fillRect(w - 8, h / 2, 3, 3);
+      outline(gr, w, h);
+    });
+    make('door-open', 32, 48, (gr, w, h) => {
+      gr.fillStyle(COLORS.doorOpen).fillRect(0, 0, w, h);
+      outline(gr, w, h);
+    });
+
+    // Aparatos: encendido (su color, con un "LED" claro) y desconectado (gris, sin LED).
+    for (const [kind, a] of Object.entries(APPLIANCES)) {
+      make(applianceKey(kind, true), a.w, a.h, (gr, w, h) => {
+        gr.fillStyle(a.color).fillRect(0, 0, w, h);
+        gr.fillStyle(0xffffff).fillRect(w - 3, 1, 2, 2);
+        outline(gr, w, h);
+      });
+      make(applianceKey(kind, false), a.w, a.h, (gr, w, h) => {
+        gr.fillStyle(COLORS.applianceOff).fillRect(0, 0, w, h);
+        outline(gr, w, h);
+      });
+    }
 
     make('hazard', 16, 16, (gr, w, h) => {
       gr.fillStyle(COLORS.hazard).fillRect(0, 0, w, h);

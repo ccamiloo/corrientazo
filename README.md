@@ -44,7 +44,11 @@ src/
 │   ├── characters.js           Personajes seleccionables (nombre, color, key de textura)
 │   └── rooms/
 │       ├── index.js            Registro de habitaciones por id
-│       └── testRoom.js         Habitación de prueba: layout + posiciones + diálogos
+│       ├── testRoom.js         Habitación de prueba: layout + posiciones + diálogos
+│       └── house.js            Nivel 1 (casa): layout + posiciones (formato fijo, lo usa el arte)
+│   ├── dialogs/house.js        Diálogos del nivel 1 (provisionales)
+│   └── appliances.js           Placeholders de los aparatos desconectables
+├── levels/                     Lógica propia de cada sala (testRoomLevel, houseLevel)
 ├── entities/
 │   ├── Player.js               Jugador: aceleración, salto variable, coyote time, jump buffer
 │   ├── Interactable.js         Objeto con indicador de interacción (base del NPC y del teléfono)

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
+import { START_ROOM } from '../data/rooms/index.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
 import { RoomFlags } from '../systems/RoomFlags.js';
 import { Controls } from '../systems/Controls.js';
@@ -73,7 +74,7 @@ export class CharacterSelectScene extends Phaser.Scene {
       // Partida nueva: el timer global arranca en 0 y los flags de las salas se limpian.
       PlayTimer.start(this.registry);
       RoomFlags.reset(this.registry);
-      this.scene.start('Game', { roomId: 'testRoom' });
+      this.scene.start('Game', { roomId: START_ROOM });
     }
   }
 }

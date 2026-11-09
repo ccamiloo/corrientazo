@@ -2,10 +2,8 @@ import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, PLAYER, CAMERA } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
+import { LEVELS } from '../levels/index.js';
 import { Player } from '../entities/Player.js';
-import { Npc } from '../entities/Npc.js';
-import { Interactable } from '../entities/Interactable.js';
-import { Hazard } from '../entities/Hazard.js';
 import { Controls } from '../systems/Controls.js';
 import { DialogBox } from '../systems/DialogBox.js';
 import { DebugOverlay } from '../systems/DebugOverlay.js';
@@ -15,6 +13,8 @@ import { buildRoom, tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
 import { ParallaxBackground } from '../systems/ParallaxBackground.js';
 
 // Escena de juego genérica: arma la habitación indicada por roomId a partir de sus datos.
+// Lo común (fondo, tiles, jugador, diálogo, cámara, interacción) vive aquí; lo propio de cada sala
+// (NPCs, peligros, misiones) lo arma su script en src/levels/, elegido por el campo `script` de la sala.
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('Game');
@@ -43,52 +43,18 @@ export class GameScene extends Phaser.Scene {
     const character = CHARACTERS[this.registry.get('characterIndex') ?? 0];
     const spawn = tileToFeet(room.spawn);
     this.player = new Player(this, spawn.x, spawn.y - PLAYER.height / 2, character.texture, this.controls);
-    this.physics.add.collider(this.player, solids);
+    this.solidsCollider = this.physics.add.collider(this.player, solids);
 
     // --- Diálogo ---
+    // freeze/unfreeze como funciones flecha: se pasan sueltas como callbacks a los scripts de sala.
     this.dialog = new DialogBox(this);
-    const freeze = () => this.player.setFrozen(true);
-    const unfreeze = () => this.player.setFrozen(false);
+    this.freeze = () => this.player.setFrozen(true);
+    this.unfreeze = () => this.player.setFrozen(false);
 
-    // --- Flags de la habitación ---
-    const phoneFlag = room.phone.flag;
-    const flag = (name) => RoomFlags.get(this.registry, this.roomId, name);
-
-    // --- NPC ---
-    const npcPos = tileToFeet(room.npc);
-    this.npc = new Npc(this, npcPos.x, npcPos.y, 'npc', {
-      dialogBox: this.dialog,
-      getLines: () => (flag(phoneFlag) ? room.npc.dialog.afterCall : room.npc.dialog.default),
-      onOpen: freeze,
-      onClose: unfreeze,
-    });
-
-    // --- Obstáculo ---
-    // room.hazard está en tiles salvo w/h/range (px); lo convertimos a px de mundo.
-    const hz = room.hazard;
-    const hzFeet = tileToFeet(hz);
-    this.hazard = new Hazard(this, { ...hz, x: hzFeet.x - 8, y: hzFeet.y });
-    this.hazardOverlap = this.physics.add.overlap(this.player, this.hazard, () => this.die());
-    if (flag(phoneFlag)) this.disableHazard();
-
-    // --- Teléfono (interactuable final) ---
-    const phonePos = tileToFeet(room.phone);
-    this.phone = new Interactable(this, phonePos.x, phonePos.y, 'phone', {
-      onInteract: () => {
-        freeze();
-        if (flag(phoneFlag)) {
-          this.dialog.open(room.phone.dialog.already, unfreeze);
-          return;
-        }
-        // El flag se marca al terminar la llamada, así el obstáculo desaparece al cerrar el diálogo.
-        this.dialog.open(room.phone.dialog.call, () => {
-          RoomFlags.set(this.registry, this.roomId, phoneFlag, true);
-          this.disableHazard();
-          unfreeze();
-        });
-      },
-    });
-    this.interactables = [this.npc, this.phone];
+    // --- Lógica propia de la sala ---
+    const createLevel = LEVELS[room.script ?? 'testRoom'];
+    this.level = createLevel(this);
+    this.interactables = this.level.interactables ?? [];
 
     // --- Cámara ---
     this.setupCamera(width, height);
@@ -96,6 +62,15 @@ export class GameScene extends Phaser.Scene {
 
     // --- Debug (F1) ---
     this.debug = new DebugOverlay(this, this.player);
+  }
+
+  // Flags de la sala actual (persisten en el registry entre muertes y reinicios de escena).
+  flag(name) {
+    return RoomFlags.get(this.registry, this.roomId, name);
+  }
+
+  setFlag(name, value = true) {
+    RoomFlags.set(this.registry, this.roomId, name, value);
   }
 
   setupCamera(roomW, roomH) {
@@ -116,9 +91,9 @@ export class GameScene extends Phaser.Scene {
     cam.roundPixels = true;
   }
 
+  // Atajo usado por pruebas y por el script de la sala de prueba.
   disableHazard() {
-    this.hazard.disable();
-    if (this.hazardOverlap) this.hazardOverlap.active = false;
+    this.level.disableHazard?.();
   }
 
   die() {
@@ -148,7 +123,7 @@ export class GameScene extends Phaser.Scene {
     // Una sola consulta por frame: si hay diálogo abierto, la tecla avanza; si no, interactúa con lo más cercano.
     const interactPressed = this.controls.justDown('interact');
     let nearest = null;
-    if (!this.dialog.isOpen) {
+    if (!this.dialog.isOpen && !this.player.frozen) {
       let best = Infinity;
       for (const it of this.interactables) {
         const d = Math.abs(it.x - this.player.x);
@@ -166,6 +141,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.player.update(time, delta);
+    this.level.update?.(time, delta);
     this.debug.update();
   }
 }
