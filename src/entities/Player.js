@@ -55,7 +55,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   // Muerte por descarga: congela al jugador en el sitio (sin gravedad ni velocidad), reproduce
-  // 'shock' completo (termina en el frame chamuscado) y recién entonces llama onDone.
+  // 'shock' completo (termina en el frame chamuscado), lo sostiene ANIM.burntHoldMs y recién entonces
+  // llama onDone.
   // Sin animaciones (placeholder) llama onDone de inmediato, como antes.
   electrocute(onDone) {
     if (this.dead) return;
@@ -70,7 +71,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     this.anims.timeScale = 1; // la caminata pudo dejarlo acelerado o frenado
-    this.once(`animationcomplete-${key}`, onDone);
+    // Al completar, la animación queda detenida en su último frame (chamuscado); el timer de la escena
+    // espera la pausa. Si la escena se cierra antes, el TimerEvent se descarta con ella.
+    this.once(`animationcomplete-${key}`, () => this.scene.time.delayedCall(ANIM.burntHoldMs, onDone));
     this.play(key);
   }
 

@@ -44,6 +44,9 @@ export const ANIM = {
   // px/s; por debajo de esto en el suelo se considera "quieto" (idle). Evita que al frenar se vea
   // un paso a cámara lenta durante los últimos frames de la desaceleración.
   walkMinSpeed: 10,
+  // ms que el personaje queda en el frame chamuscado (último de 'shock') antes de pasar a Game Over.
+  // Sin esta pausa el frame duraría solo 1/10 s (lo que dura un frame a 10 fps) y casi no se leería.
+  burntHoldMs: 800,
 };
 
 // --- Cámara ---
