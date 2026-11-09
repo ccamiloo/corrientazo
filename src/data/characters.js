@@ -8,7 +8,11 @@ export const CHARACTERS = [
     texture: 'moises',
     sheet: { image: 'assets/characters/moises.png', data: 'assets/characters/moises.json' },
   },
-  { name: 'Volta', color: 0xff7a6b, texture: 'player-1' },
+  {
+    name: 'Camilo',
+    texture: 'camilo',
+    sheet: { image: 'assets/characters/camilo.png', data: 'assets/characters/camilo.json' },
+  },
   { name: 'Ohmar', color: 0x7bd88f, texture: 'player-2' },
 ];
 
