@@ -1,9 +1,10 @@
 import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
 import { ROOMS } from '../data/rooms/index.js';
-import { CHARACTERS } from '../data/characters.js';
+import { currentCharacter } from '../data/characters.js';
 import { Controls } from '../systems/Controls.js';
 import { startNewGame } from '../systems/startGame.js';
+import { Music } from '../systems/Music.js';
 
 // TEMPORAL (solo desarrollo): menú para entrar directo a cualquier sala registrada en ROOMS.
 // Se abre con F3 desde la selección de personaje o desde el juego, si DEV.menu está en true.
@@ -31,6 +32,7 @@ export class DevMenuScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(COLORS.background);
     this.controls = new Controls(this, MENU_KEYS);
+    Music.play(this, 'menus'); // si venimos de la selección, sigue la misma pista sin cortarse
     this.rooms = Object.keys(ROOMS);
     this.index = 0;
 
@@ -38,7 +40,7 @@ export class DevMenuScene extends Phaser.Scene {
       .text(GAME_W / 2, 36, 'Menú de desarrollo', { fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: COLORS.text })
       .setOrigin(0.5);
 
-    const character = CHARACTERS[this.registry.get('characterIndex') ?? 0];
+    const character = currentCharacter(this.registry);
     this.add
       .text(GAME_W / 2, 58, `Personaje: ${character.name}`, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
       .setOrigin(0.5);

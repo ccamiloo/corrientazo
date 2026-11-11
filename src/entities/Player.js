@@ -30,7 +30,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // La velocidad horizontal la limitamos a mano; aquí solo acotamos la caída.
     this.body.setMaxVelocity(10000, MOVE.maxFallSpeed);
 
-    // Animaciones: solo si la textura tiene las suyas (Moisés). Los placeholders son una imagen fija.
+    // Animaciones: solo si la textura tiene las suyas (personajes con spritesheet). Los placeholders son una imagen fija.
     this.textureBase = textureKey;
     this.animated = scene.anims.exists(animKey(textureKey, 'idle'));
     this.dead = false;

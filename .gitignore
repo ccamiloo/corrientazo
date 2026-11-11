@@ -1,5 +1,7 @@
 # Assets locales que no van al repo
 media/
+# Música: copia de media/music para que Vite la sirva (mismo criterio: no se sube)
+public/assets/music/
 
 # Node / Vite
 node_modules/

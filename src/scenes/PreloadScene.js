@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES } from '../config/constants.js';
+import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES, MUSIC } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS, animKey } from '../data/characters.js';
 import { APPLIANCES, applianceKey, propKey } from '../data/appliances.js';
@@ -31,6 +31,12 @@ export class PreloadScene extends Phaser.Scene {
     // pero el loader del spritesheet lo necesita antes de leerlo; por eso encadenamos: primero el JSON
     // y, cuando llega, encolamos el PNG (el loader sigue abierto mientras haya archivos pendientes).
     this.loadRoomArt();
+
+    // Música (una key por pista: 'menus', 'playing', 'gameover'). Si falta un archivo, el loaderror de
+    // arriba avisa y Music.play simplemente no suena.
+    for (const [key, file] of Object.entries(MUSIC.tracks)) {
+      this.load.audio(key, MUSIC.basePath + file);
+    }
 
     for (const c of CHARACTERS.filter((ch) => ch.sheet)) {
       const dataKey = `${c.texture}-data`;

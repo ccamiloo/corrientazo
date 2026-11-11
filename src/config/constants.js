@@ -115,6 +115,20 @@ export const DEV = {
   menu: true, // F3 abre el menú para entrar directo a cualquier sala (DevMenuScene)
 };
 
+// --- Música ---
+// Una pista por "momento" del juego, siempre en loop. Los archivos viven en public/assets/music/
+// (copias de media/music/). Music.play no reinicia la pista si ya está sonando, así que pasar de la
+// selección de personaje al menú de desarrollo (ambos 'menus') no la corta.
+export const MUSIC = {
+  volume: 0.5,
+  basePath: 'assets/music/',
+  tracks: {
+    menus: 'menus.mp3', // selección de personaje y menú de desarrollo
+    playing: 'playing.mp3', // jugando (GameScene)
+    gameover: 'gameover.mp3', // pantalla de Game Over
+  },
+};
+
 // --- Profundidades de dibujo (mayor = encima) ---
 export const DEPTH = {
   background: -100, // la capa i del parallax se dibuja en background + i (todas detrás de los tiles)

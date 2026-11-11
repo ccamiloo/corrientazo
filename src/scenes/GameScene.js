@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, PLAYER, CAMERA, DEV } from '../config/constants.js';
-import { CHARACTERS } from '../data/characters.js';
+import { currentCharacter } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { LEVELS } from '../levels/index.js';
 import { Player } from '../entities/Player.js';
@@ -11,6 +11,7 @@ import { PlayTimer } from '../systems/PlayTimer.js';
 import { RoomFlags } from '../systems/RoomFlags.js';
 import { buildRoom, tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
 import { ParallaxBackground } from '../systems/ParallaxBackground.js';
+import { Music } from '../systems/Music.js';
 
 // Escena de juego genérica: arma la habitación indicada por roomId a partir de sus datos.
 // Lo común (fondo, tiles, jugador, diálogo, cámara, interacción) vive aquí; lo propio de cada sala
@@ -30,6 +31,7 @@ export class GameScene extends Phaser.Scene {
   create() {
     const room = this.room;
     this.controls = new Controls(this);
+    Music.play(this, 'playing');
 
     // --- Fondo con parallax (el de la sala; 'street' si no define uno) ---
     this.background = new ParallaxBackground(this, room.background ?? 'street');
@@ -40,7 +42,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Jugador ---
     // El sprite tiene origen al centro, así que lo subimos media altura desde el punto de apoyo.
-    const character = CHARACTERS[this.registry.get('characterIndex') ?? 0];
+    const character = currentCharacter(this.registry);
     const spawn = tileToFeet(room.spawn);
     this.player = new Player(this, spawn.x, spawn.y - PLAYER.height / 2, character.texture, this.controls);
     this.solidsCollider = this.physics.add.collider(this.player, solids);

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
+import { Music } from '../systems/Music.js';
 
 // Tips de ejemplo; más adelante cada muerte podría mostrar el tip del peligro que la causó.
 const TIPS = ['Nunca toques un cable suelto: aléjate y llama a un técnico.'];
@@ -21,6 +22,7 @@ export class GameOverScene extends Phaser.Scene {
   create() {
     // El timer ya lo pausó GameScene al morir; aquí no corre porque solo GameScene llama a tick().
     this.cameras.main.setBackgroundColor(COLORS.background);
+    Music.play(this, 'gameover');
 
     this.add
       .text(GAME_W / 2, GAME_H / 2 - 24, '¡CORRIENTAZO!', {

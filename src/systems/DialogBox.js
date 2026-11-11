@@ -1,4 +1,5 @@
 import { GAME_W, GAME_H, DEPTH, COLORS, FONT } from '../config/constants.js';
+import { genderize, currentCharacter } from '../data/characters.js';
 
 // Caja de diálogo fija a la cámara, en la parte inferior de la pantalla.
 // Uso: open(lines, onClose) → advance() con cada pulsación de interactuar → al pasar la última línea se cierra y llama onClose.
@@ -46,7 +47,10 @@ export class DialogBox {
   }
 
   open(lines, onClose) {
-    this.lines = lines;
+    // Marcadores de género ({mijo} → mijo/mija) según el personaje elegido. Se hace aquí, en el único
+    // punto por donde pasan todos los diálogos, para que ningún nivel tenga que acordarse de llamarlo.
+    const { gender } = currentCharacter(this.scene.registry);
+    this.lines = lines.map((line) => genderize(line, gender));
     this.index = 0;
     this.onClose = onClose;
     this.parts.forEach((o) => o.setVisible(true));
