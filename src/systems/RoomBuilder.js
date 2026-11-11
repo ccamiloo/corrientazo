@@ -11,8 +11,19 @@ import { TILE, DEPTH } from '../config/constants.js';
 
 // Leyenda del layout. Sólidos: tienen colisión y se fusionan entre sí sin importar el carácter.
 // Los demás caracteres visuales se dibujan pero no colisionan. '.' es vacío.
-const SOLID_TILES = { '#': 'tile', E: 'tile-step', T: 'tile-roof' };
-const DECOR_TILES = { '|': 'column' };
+// Casa: '#' estructura, 'E' escalón, 'T' techo. Calle: 'C' carro, 'B' banca, 'A' andén,
+// 'S' cartelera del paradero, 'M' matera ('T' es el techo del paradero). Decoraciones: '|' columna, 'P' poste.
+const SOLID_TILES = {
+  '#': 'tile',
+  E: 'tile-step',
+  T: 'tile-roof',
+  C: 'tile-car',
+  B: 'tile-bench',
+  A: 'tile-curb',
+  S: 'tile-stop-sign',
+  M: 'tile-planter',
+};
+const DECOR_TILES = { '|': 'column', P: 'pole' };
 export const isSolid = (ch) => ch in SOLID_TILES;
 
 export function roomSize(room) {

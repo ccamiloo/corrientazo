@@ -98,14 +98,17 @@ export class GameScene extends Phaser.Scene {
     this.level.disableHazard?.();
   }
 
-  die() {
+  // `cause` (opcional, p. ej. 'cable' o 'puddle'): el script de la sala la traduce a un tip para Game Over
+  // con deathTip(cause); sin tip, GameOver muestra uno genérico.
+  die(cause) {
     // El overlap se dispara en cada step mientras se toquen; el guard evita iniciar GameOver varias veces.
     if (this.isDying) return;
     this.isDying = true;
     PlayTimer.pause(this.registry);
     // El jugador se congela y reproduce la descarga completa; recién al terminar pasamos a Game Over.
     // Mientras tanto update() sale temprano (isDying), así que no hay entrada ni interacción.
-    this.player.electrocute(() => this.scene.start('GameOver', { roomId: this.roomId }));
+    const tip = this.level.deathTip?.(cause);
+    this.player.electrocute(() => this.scene.start('GameOver', { roomId: this.roomId, tip }));
   }
 
   update(time, delta) {

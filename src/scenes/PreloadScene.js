@@ -128,7 +128,11 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // NPCs de la casa: mismo molde que 'npc', con otro color.
-    for (const [key, color] of [['npc-dad', COLORS.npcDad], ['npc-grandma', COLORS.npcGrandma]]) {
+    for (const [key, color] of [
+      ['npc-dad', COLORS.npcDad],
+      ['npc-grandma', COLORS.npcGrandma],
+      ['npc-neighbor', COLORS.npcNeighbor],
+    ]) {
       make(key, 16, 28, (gr, w, h) => {
         gr.fillStyle(color).fillRect(0, 0, w, h);
         gr.fillStyle(0x0b0d12).fillRect(4, 7, 2, 3).fillRect(10, 7, 2, 3);
@@ -143,6 +147,23 @@ export class PreloadScene extends Phaser.Scene {
         gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
       });
     }
+    // Sólidos de la calle (nivel 2): mismo molde, un color por objeto para leer el layout.
+    for (const [key, color] of [
+      ['tile-car', COLORS.car],
+      ['tile-bench', COLORS.bench],
+      ['tile-curb', COLORS.curb],
+      ['tile-stop-sign', COLORS.stopSign],
+      ['tile-planter', COLORS.planter],
+    ]) {
+      make(key, TILE, TILE, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
+      });
+    }
+    // Poste (P): decorativo, franja de 4 px centrada.
+    make('pole', TILE, TILE, (gr) => {
+      gr.fillStyle(COLORS.pole).fillRect(6, 0, 4, TILE);
+    });
     // Columna (|): decorativa, más angosta que el tile.
     make('column', TILE, TILE, (gr) => {
       gr.fillStyle(COLORS.column).fillRect(5, 0, 6, TILE);

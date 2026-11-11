@@ -13,6 +13,7 @@ import { Music } from '../systems/Music.js';
 // Nombre legible de cada sala; las que no estén aquí se muestran por su id.
 const LABELS = {
   house: 'Nivel 1: la casa',
+  street_1: 'Nivel 2: la calle (sala 1)',
   testRoom: 'Sala de prueba',
 };
 

@@ -115,6 +115,37 @@ export const DEV = {
   menu: true, // F3 abre el menú para entrar directo a cualquier sala (DevMenuScene)
 };
 
+// --- Nivel 2: cable culebra ---
+// Péndulo anclado a la punta del poste. El largo no es constante: lo calcula la sala para que la punta
+// toque el suelo justo en la parte baja del arco (largo = suelo - ancla).
+// El ángulo sigue θ(t) = amplitud · sen(2π t / periodo): es determinista, así que los charcos pueden
+// "predecir" cuándo se electrifican para avisar antes.
+export const CABLE = {
+  amplitudeDeg: 40, // grados a cada lado de la vertical
+  // s, ida y vuelta completa. Medido con un bot que cruza por la banca: con 3 s el cruce es imposible,
+  // con 4 s las ventanas son de 0.3 s (saltar del carro) y 0.6 s (arrancar desde la banca); con 4.5 s, 0.6 y 0.8.
+  periodS: 4.5,
+  // "Parte baja del arco": mientras |θ| sea menor que esto, la punta está tocando el charco y lo electrifica.
+  // 12° ≈ la punta a menos de 4 px del suelo con el ancla a 12 tiles.
+  lowArcDeg: 12,
+  hitMarginPx: 2, // px que se le recortan por lado al hitbox del jugador contra el cable (rozar no mata)
+  thicknessPx: 2, // px, grosor del cable (dibujo y colisión)
+  settleMs: 900, // ms que tarda en quedar colgando quieto al cortar la luz
+  sparkCount: 5, // chispas por frame en la punta
+  sparkRadiusPx: 6, // px, radio alrededor de la punta en el que aparecen
+};
+
+// --- Nivel 2: charcos ---
+// La corriente sale del charco que toca el cable y viaja por el grafo de charcos conectados:
+// un charco a n saltos se electrifica hopDelayS · n segundos después que el de origen ("ola").
+export const PUDDLE = {
+  hopDelayS: 0.25, // s de retraso por cada conexión entre charcos
+  warnS: 0.4, // s que titila antes de electrificarse
+  edgeMarginPx: 4, // px: pisar el borde del charco con menos de esto no mata (se siente más justo)
+  heightPx: 3, // px, alto del dibujo del charco sobre el suelo
+  flickerMs: 80, // ms entre destellos del aviso
+};
+
 // --- Música ---
 // Una pista por "momento" del juego, siempre en loop. Los archivos viven en public/assets/music/
 // (copias de media/music/). Music.play no reinicia la pista si ya está sonando, así que pasar de la
@@ -166,6 +197,24 @@ export const COLORS = {
   text: '#e8ecf1',
   textDim: '#8a94a6',
   danger: '#ffd23f',
+  // Nivel 2 (calle)
+  npcNeighbor: 0x88c0d0,
+  car: 0xa3423c, // C
+  bench: 0x8b6a3e, // B
+  planter: 0x5b8a3c, // M
+  curb: 0x737985, // A (andén)
+  stopSign: 0x3f7fa8, // S (cartelera del paradero)
+  stopRoof: 0x4c566a, // T del paradero (la casa usa roof)
+  pole: 0x6b6b6b, // P
+  shop: 0x232833, // fachada de la tienda (fondo)
+  shopAwning: 0xb85c38,
+  manhole: 0x3b3f47,
+  cable: 0x15171c,
+  spark: 0xffe066,
+  puddle: 0x3d74d6,
+  puddleFlash: 0xd6ecff,
+  puddleLive: 0xffd23f,
+  puddleZigzag: 0x0b0d12,
 };
 
 export const FONT = 'monospace';

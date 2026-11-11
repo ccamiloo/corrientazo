@@ -3,7 +3,7 @@ import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
 import { Music } from '../systems/Music.js';
 
-// Tips de ejemplo; más adelante cada muerte podría mostrar el tip del peligro que la causó.
+// Tip genérico, para las muertes sin tip propio (la sala lo pasa en data.tip según la causa).
 const TIPS = ['Nunca toques un cable suelto: aléjate y llama a un técnico.'];
 
 // Margen antes de aceptar teclas, para que la tecla que el jugador venía presionando
@@ -17,6 +17,7 @@ export class GameOverScene extends Phaser.Scene {
 
   init(data) {
     this.roomId = data.roomId;
+    this.tip = data.tip;
   }
 
   create() {
@@ -34,7 +35,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(GAME_W / 2, GAME_H / 2 + 14, Phaser.Utils.Array.GetRandom(TIPS), {
+      .text(GAME_W / 2, GAME_H / 2 + 14, this.tip ?? Phaser.Utils.Array.GetRandom(TIPS), {
         fontFamily: FONT,
         fontSize: '10px',
         color: COLORS.text,
