@@ -137,9 +137,4 @@ export const construction = {
     },
   },
 
-  // Cascos (tiles, pies en la fila y): al tocarlos guardan el punto de reaparición.
-  checkpoints: [
-    { id: 'CP1', x: 50, y: 8 },
-    { id: 'CP2', x: 80, y: 8 },
-  ],
 };

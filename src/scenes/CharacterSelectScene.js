@@ -5,6 +5,8 @@ import { Controls } from '../systems/Controls.js';
 import { Music } from '../systems/Music.js';
 import { pixelText } from '../systems/pixelText.js';
 import { menuBackground, menuCharacter, playIfExists, drawPedestal } from '../systems/menuHelpers.js';
+import { bindPrompt } from '../systems/prompts.js';
+import { Device } from '../systems/Device.js';
 
 // Selección de personaje (docs/mockups/mockup_seleccion_x3.png, a x3; aquí en px del juego).
 export class CharacterSelectScene extends Phaser.Scene {
@@ -37,6 +39,12 @@ export class CharacterSelectScene extends Phaser.Scene {
       drawPedestal(this, x, feetY);
       const sprite = menuCharacter(this, c, x, feetY, 'idle');
       const label = pixelText(this, x, 214, c.name, { origin: 0.5 }).setScrollFactor(0);
+      // Zona de toque invisible y generosa (80x100 px: personaje, pedestal y nombre), mucho más que el sprite.
+      const hit = this.add.zone(x, 172, 80, 100).setScrollFactor(0).setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => {
+        this.index = i;
+        this.refresh();
+      });
       return { x, sprite, label, character: c };
     });
 
@@ -45,12 +53,24 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (this.anims.exists('ui-arrow-bounce')) this.arrow.play('ui-arrow-bounce');
 
     // Sin '·' de separador: la fuente no lo trae.
-    pixelText(this, GAME_W / 2, 243, '← → para escoger     Enter para jugar', { origin: 0.5 }).setScrollFactor(0);
+    const help = pixelText(this, GAME_W / 2, 243, '', { origin: 0.5 }).setScrollFactor(0);
+
+    // Táctil: botón JUGAR (el del título, 88x29) para confirmar, en el lugar de la ayuda de teclado.
+    this.confirmButton = this.add.sprite(GAME_W / 2, 226, 'ui-button-jugar', 0).setOrigin(0.5, 0).setScrollFactor(0);
+    this.confirmButton.setInteractive({ useHandCursor: true });
+    this.confirmButton.on('pointerdown', () => this.confirm());
 
     // TEMPORAL (desarrollo): acceso al menú de salas.
-    if (DEV.menu) {
-      pixelText(this, GAME_W / 2, 261, 'F3: menú de desarrollo', { color: UI.dim, origin: 0.5 }).setScrollFactor(0);
-    }
+    const devHint = DEV.menu ? pixelText(this, GAME_W / 2, 261, 'F3: menú de desarrollo', { color: UI.dim, origin: 0.5 }).setScrollFactor(0) : null;
+
+    // En táctil la ayuda dice "Toca un personaje" debajo del título y abajo va el botón; con teclado, como antes.
+    bindPrompt(this, help, 'selectHelp', {}, (touch) => {
+      help.setY(touch ? 72 : 243);
+      this.confirmButton.setVisible(touch);
+      this.confirmButton.input.enabled = touch;
+      devHint?.setVisible(!touch);
+    });
+    this.leaving = false;
 
     this.refresh();
   }
@@ -63,6 +83,17 @@ export class CharacterSelectScene extends Phaser.Scene {
       playIfExists(s.sprite, s.character, selected ? 'walk' : 'idle');
     });
     this.arrow.x = this.slots[this.index].x;
+  }
+
+  confirm() {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.registry.set('characterIndex', this.index);
+    // Antes del primer nivel, el nombre para la tabla de tiempos (NameEntry arranca la partida).
+    if (Device.isTouch) {
+      this.confirmButton.setFrame(2);
+      this.time.delayedCall(MENU.buttonPressMs, () => this.scene.start('NameEntry'));
+    } else this.scene.start('NameEntry');
   }
 
   update() {
@@ -78,9 +109,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const confirm = this.controls.justDown('confirm');
     const devMenu = this.controls.justDown('devMenu');
     if (confirm) {
-      this.registry.set('characterIndex', this.index);
-      // Antes del primer nivel, el nombre para la tabla de tiempos (NameEntry arranca la partida).
-      this.scene.start('NameEntry');
+      this.confirm();
     } else if (devMenu && DEV.menu) {
       // El menú entra con el personaje que esté marcado en este momento.
       this.registry.set('characterIndex', this.index);

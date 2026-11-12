@@ -7,7 +7,7 @@ export const constructionDialogs = {
       '¡Ey, {mijo}! Por aquí no se puede pasar así no más: esto es una obra.',
       'Y mire esa línea de alta tensión: esta construcción quedó demasiado cerca.',
       'Con alta tensión no hace falta tocar el cable: si uno se arrima mucho, la corriente salta como un rayo.',
-      'Si va a cruzar, fíjese bien: cuando algo brille, quítese de ahí. Y coja los cascos que hay en el camino.',
+      'Si va a cruzar, fíjese bien: cuando algo brille, quítese de ahí.',
     ],
     again: ['Cuando algo brille, quítese de ahí. Sin afanes.'],
   },
@@ -19,7 +19,6 @@ export const constructionDialogs = {
       'Por esa escalera sales derechito al restaurante de la Seño. ¡Ese sí es el único corrientazo que vale la pena!',
     ],
   },
-  end: '¡Llegaste al restaurante de la Seño!',
   // Tip de la pantalla de Game Over según la causa de la muerte.
   deathTips: {
     line: 'Nunca toques ni te acerques a una línea de alta tensión.',

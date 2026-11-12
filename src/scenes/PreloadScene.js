@@ -49,12 +49,26 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('lb-medals', res + 'lb_medals.png', { frameWidth: 12, frameHeight: 12 });
     this.load.spritesheet('lb-row-hi', res + 'lb_row_hi.png', { frameWidth: 282, frameHeight: 18 });
 
+    // Escena final (public/assets/ui/ending/README.txt).
+    const end = 'assets/ui/ending/';
+    for (const name of ['bg', 'counter', 'tray', 'tick', 'banner', 'receipt', 'stamp']) this.load.image(`end-${name}`, `${end}end_${name}.png`);
+    this.load.spritesheet('end-food', end + 'end_food.png', { frameWidth: 16, frameHeight: 12 });
+    this.load.spritesheet('end-steam', end + 'end_steam.png', { frameWidth: 8, frameHeight: 10 });
+    this.load.spritesheet('end-title', end + 'end_title.png', { frameWidth: 266, frameHeight: 50 });
+    this.load.spritesheet('end-confetti', end + 'end_confetti.png', { frameWidth: 4, frameHeight: 4 });
+    this.load.spritesheet('end-hint', end + 'end_hint.png', { frameWidth: 196, frameHeight: 17 });
+    this.load.spritesheet('end-hint-touch', end + 'end_hint_touch.png', { frameWidth: 165, frameHeight: 17 });
+    // Botones táctiles (los dibuja el overlay HTML; aquí solo para la pantalla de controles de la casa).
+    this.load.spritesheet('touch-buttons', 'assets/ui/touch/touch_buttons.png', { frameWidth: 32, frameHeight: 32 });
+
     // Game Over (public/assets/ui/gameover/, ver sus README). go_burst.png ya no se usa.
     const go = 'assets/ui/gameover/';
     this.load.spritesheet('go-pop', go + 'go_pop.png', { frameWidth: 136, frameHeight: 120 });
     this.load.spritesheet('go-title', go + 'go_title.png', { frameWidth: 266, frameHeight: 50 });
     this.load.spritesheet('go-smoke', go + 'go_smoke.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('go-hint', go + 'go_hint.png', { frameWidth: 188, frameHeight: 17 });
+    // Versión táctil ("toca para reintentar"): mismo formato, 2 frames de 157x17.
+    this.load.spritesheet('go-hint-touch', go + 'go_hint_touch.png', { frameWidth: 157, frameHeight: 17 });
     this.load.image('go-tipcard', go + 'go_tipcard.png');
     this.load.image('go-badge', go + 'go_badge.png');
     this.load.image('go-frame', go + 'go_frame.png');
@@ -180,6 +194,13 @@ export class PreloadScene extends Phaser.Scene {
     // Game Over: estallido detrás del personaje (loop) y bocanada de humo (una vez).
     if (this.textures.exists('go-pop')) {
       this.anims.create({ key: 'go-pop', frames: this.anims.generateFrameNumbers('go-pop'), frameRate: 6, repeat: -1 });
+    }
+    // Escena final: vapor de la sopa (6 fps) y la ola del título (5 fps), en loop.
+    if (this.textures.exists('end-steam')) {
+      this.anims.create({ key: 'end-steam', frames: this.anims.generateFrameNumbers('end-steam'), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('end-title')) {
+      this.anims.create({ key: 'end-title-wave', frames: this.anims.generateFrameNumbers('end-title'), frameRate: 5, repeat: -1 });
     }
     if (this.textures.exists('go-smoke')) {
       this.anims.create({ key: 'go-smoke', frames: this.anims.generateFrameNumbers('go-smoke'), frameRate: 8, repeat: 0 });

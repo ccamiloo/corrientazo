@@ -7,7 +7,15 @@
 // líneas de "todavía no" para ellos.
 
 export const houseDialogs = {
+  // HUD del objetivo (arriba a la derecha), según el avance.
+  objective: {
+    dad: 'Baja a hablar con papá',
+    grandma: 'Sube a la terraza donde la abuela',
+    door: 'Sal por la puerta',
+  },
   dad: {
+    // Grito desde la sala al empezar (diálogo automático: no detiene al jugador).
+    shout: ['Papá, desde la sala: ¡{Mijo}! ¡Baja un momentico, que necesito hablarte!'],
     first: [
       '¡Buenos días! Por fin te levantaste.',
       'Anoche cayó un aguacero tenaz. Se fue la luz como tres veces.',
@@ -43,5 +51,4 @@ export const houseDialogs = {
   door: {
     locked: ['Todavía no puedo salir. Me falta desconectar cosas ({left} de {total}).'],
   },
-  end: 'Fin del nivel 1',
 };

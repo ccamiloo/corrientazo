@@ -1,4 +1,4 @@
-// Diálogos del nivel 2, sala 1 (la calle). PROVISIONALES: falta la versión definitiva.
+// Diálogos del nivel 2 (la calle). PROVISIONALES: falta la versión definitiva.
 // Marcadores de género ({mijo}, {Mijo}, {o}...): ver GENDER_WORDS en src/data/characters.js.
 
 export const street1Dialogs = {
@@ -15,8 +15,6 @@ export const street1Dialogs = {
     done: ['¡Bien hecho, {mijo}! Ya cortaron la luz. Ahora sí se puede pasar tranquil{o}.'],
   },
   phone: {
-    // Antes de hablar con el vecino.
-    notYet: ['Primero voy a ver qué le pasa al vecino.'],
     call: [
       'Marcas el número de la empresa de energía...',
       '"Gracias por avisar. Ya cortamos el circuito de ese sector; no se acerque al cable hasta que llegue la cuadrilla."',

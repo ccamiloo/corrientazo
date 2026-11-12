@@ -2,17 +2,83 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Sin zoom del navegador (ni pellizco ni doble toque) y usando toda la pantalla, notch incluido. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Corrientazo</title>
+    <meta name="description" content="Plataformero de seguridad eléctrica: llega al almuerzo sin llevarte un corrientazo." />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <!-- "Agregar a inicio": en iPhone abre en pantalla completa (no hay requestFullscreen en Safari de iPhone). -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen" />
+    <meta name="apple-mobile-web-app-title" content="Corrientazo" />
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0b0d12; overflow: hidden; }
-      #game { width: 100vw; height: 100vh; }
-      /* Pixeles nítidos al escalar el canvas */
-      canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+      /* Nada de scroll, zoom con doble toque, selección de texto ni menú al mantener presionado. */
+      html,
+      body,
+      canvas,
+      #app,
+      #game,
+      #touch-controls,
+      #touch-controls * {
+        touch-action: none;
+        overscroll-behavior: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        background: #15111f;
+        overflow: hidden;
+      }
+      /* #app envuelve el canvas y todos los overlays HTML. El fondo va aquí y no en body porque la pantalla completa
+         se pide sobre #app: lo de fuera (body incluido) no se ve en pantalla completa. Fijo: nada se mueve ni hace
+         scroll. Capas de arriba hacia abajo: viñeta, brillo cálido, patrón (64x64 a x3) y el color base. */
+      #app {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55) 100%),
+          radial-gradient(ellipse at center, rgba(255, 200, 80, 0.07), transparent 60%),
+          url('assets/ui/page/page_pattern.png') 0 0 / 192px 192px repeat,
+          #15111f;
+        image-rendering: pixelated;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+      }
+      /* Pixeles nítidos al escalar el canvas (también con zoom no entero en el celular). */
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        display: block;
+        /* Marco: borde oscuro, borde morado y sombra. main.js lo quita (clase no-frame) cuando el juego llena la
+           pantalla en el celular, para no perder espacio. */
+        box-shadow:
+          0 0 0 4px #0b0812,
+          0 0 0 8px #2b2440,
+          0 24px 60px rgba(0, 0, 0, 0.6);
+      }
+      #app.no-frame canvas {
+        box-shadow: none;
+      }
     </style>
   </head>
   <body>
-    <div id="game"></div>
+    <div id="app"><div id="game"></div></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

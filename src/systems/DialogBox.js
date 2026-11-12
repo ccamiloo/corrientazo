@@ -10,6 +10,11 @@ import { pixelText } from './pixelText.js';
 // mientras se escribe, la línea se completa de una vez; la siguiente pulsación pasa a la próxima línea.
 // `hooks` (opcional) avisa a quien habla: onType(i) al empezar a escribir la línea i, onTyped(i) al
 // terminarla (los NPCs animan "talk" entre ambos) y onClose() al cerrar la caja.
+//
+// Modo automático (`{ auto: true }` en open): las líneas pasan solas (DIALOG.autoHold*) y la caja no espera
+// ninguna tecla; quien la abre no congela al jugador. Sirve para avisos que se dicen "de pasada" mientras se juega
+// (el grito del papá, el aviso de doña Carmen junto al pulpo). `blocking` es false en ese modo: GameScene sigue
+// dejando moverse e interactuar, y abrir otro diálogo lo reemplaza.
 export class DialogBox {
   constructor(scene) {
     this.scene = scene;
@@ -18,6 +23,8 @@ export class DialogBox {
     this.onClose = null;
     this.hooks = {};
     this.typing = null; // TimerEvent de la máquina de escribir mientras escribe
+    this.auto = false;
+    this.autoNext = null; // TimerEvent que pasa a la siguiente línea en modo automático
 
     // Ocupa los últimos 56 px de la pantalla. Ojo al diseñar salas: si el suelo más bajo tiene
     // menos de 4 tiles de grosor, al estar en el fondo de la sala el jugador queda detrás de la caja.
@@ -52,11 +59,22 @@ export class DialogBox {
     return this.bg.visible;
   }
 
+  // Abierta y esperando al jugador (el modo automático no bloquea nada).
+  get blocking() {
+    return this.isOpen && !this.auto;
+  }
+
   get isTyping() {
     return this.typing !== null;
   }
 
-  open(lines, onClose, hooks = {}) {
+  open(lines, onClose, hooks = {}, { auto = false } = {}) {
+    // Reemplaza a uno abierto (solo pasa con uno automático): su NPC deja de hablar, pero su onClose no corre.
+    if (this.isOpen) {
+      this.stopTyping();
+      this.hooks.onClose?.();
+    }
+    this.auto = auto;
     // Marcadores de género ({mijo} → mijo/mija) según el personaje elegido. Se hace aquí, en el único
     // punto por donde pasan todos los diálogos, para que ningún nivel tenga que acordarse de llamarlo.
     const { gender } = currentCharacter(this.scene.registry);
@@ -84,6 +102,7 @@ export class DialogBox {
     this.parts.forEach((o) => o.setVisible(false));
     const cb = this.onClose;
     const hooks = this.hooks;
+    this.auto = false;
     this.onClose = null;
     this.hooks = {};
     hooks.onClose?.();
@@ -116,13 +135,20 @@ export class DialogBox {
     this.stopTyping();
     this.text.setText(this.full);
     const last = this.index >= this.lines.length - 1;
-    this.more.setVisible(!last);
-    this.end.setVisible(last);
+    // En modo automático no hay nada que presionar: sin indicadores, y la línea pasa sola tras leerla.
+    this.more.setVisible(!last && !this.auto);
+    this.end.setVisible(last && !this.auto);
     this.hooks.onTyped?.(this.index);
+    if (this.auto) {
+      const hold = DIALOG.autoHoldBaseMs + this.full.length * DIALOG.autoHoldPerCharMs;
+      this.autoNext = this.scene.time.delayedCall(hold, () => this.advance());
+    }
   }
 
   stopTyping() {
     this.typing?.remove();
     this.typing = null;
+    this.autoNext?.remove();
+    this.autoNext = null;
   }
 }

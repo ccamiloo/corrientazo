@@ -52,10 +52,31 @@ export function createMarketLevel(scene) {
     );
   };
 
+  // Aviso "de pasada" (doña Carmen junto al pulpo): diálogo automático, sin congelar ni pedir teclas. Antes el
+  // jugador quedaba quieto mientras ella hablaba y las chispas del pulpo lo mataban.
+  const shout = (lines, hooks) => dialog.open(lines, null, hooks, { auto: true });
+
   // Arte de la sala (room.art): ¿cargó cada pieza? Sin ella se dibuja el greybox. `art(name)` = key del prop si
   // cargó, o null.
   const hasArt = (key) => scene.textures.exists(key);
   const art = (name) => (hasArt(propKey(name)) ? propKey(name) : null);
+
+  // Cajas agregadas después del arte (room.extraCrates): escalones para volver desde el puesto de doña Carmen al
+  // taco. La colisión ya viene del layout ('K'); market_tiles.png no las trae, así que se dibujan con un recorte de
+  // una caja del mismo arte (col 94, fila 12). Sin arte, RoomBuilder ya las dibujó con el greybox.
+  const tilesKey = `${room.id}-tiles`;
+  // OJO: con setCrop sobre la imagen completa, no agregando un frame a la textura (un frame nuevo pasa a ser el
+  // frame por defecto de la textura y la próxima vez RoomBuilder dibujaría la sala como una sola caja).
+  if (hasArt(tilesKey)) {
+    const src = room.extraCratesSource;
+    for (const [cx, cy] of room.extraCrates) {
+      scene.add
+        .image((cx - src.x) * TILE, (cy - src.y) * TILE, tilesKey)
+        .setOrigin(0)
+        .setCrop(src.x * TILE, src.y * TILE, TILE, TILE)
+        .setDepth(DEPTH.tiles);
+    }
+  }
   const playIf = (sprite, key, config) => {
     if (scene.anims.exists(key)) sprite.play(config ? { key, ...config } : key, true);
   };
@@ -431,7 +452,10 @@ export function createMarketLevel(scene) {
     onInteract: () => {
       const hooks = carmen.dialogHooks(player);
       if (scene.flag('breakerOff')) say(D.carmen.done, finish, hooks);
-      else say(D.carmen.warn, () => scene.setFlag('carmenWarned'), hooks);
+      else {
+        scene.setFlag('carmenWarned');
+        shout(D.carmen.warn, hooks);
+      }
     },
   });
 
@@ -460,7 +484,7 @@ export function createMarketLevel(scene) {
       // Aviso de doña Carmen: una sola vez (el flag sobrevive a la muerte).
       if (!scene.flag('carmenWarned') && player.x > room.carmenWarnX && !dialog.isOpen) {
         scene.setFlag('carmenWarned');
-        say(D.carmen.warn, null, carmen.dialogHooks(player));
+        shout(D.carmen.warn, carmen.dialogHooks(player));
       }
 
       // Muerte: enganches y lata con el congelador prendido, chispas del pulpo siempre, charcos prendidos.

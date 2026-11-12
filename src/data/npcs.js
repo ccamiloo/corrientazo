@@ -11,6 +11,7 @@ export const NPC_SHEETS = [
   { texture: 'carmen', image: 'assets/npcs/carmen.png', data: 'assets/npcs/carmen.json' },
   { texture: 'maestro', image: 'assets/npcs/maestro.png', data: 'assets/npcs/maestro.json' },
   { texture: 'ingeniera', image: 'assets/npcs/ingeniera.png', data: 'assets/npcs/ingeniera.json' },
+  { texture: 'seno', image: 'assets/npcs/seno.png', data: 'assets/npcs/seno.json' }, // escena final
 ];
 
 export const npcAnimKey = (texture, name) => `${texture}_${name}`;

@@ -14,7 +14,7 @@ import { Music } from '../systems/Music.js';
 // Nombre legible de cada sala; las que no estén aquí se muestran por su id.
 const LABELS = {
   house: 'Nivel 1: la casa',
-  street_1: 'Nivel 2: la calle (sala 1)',
+  street_1: 'Nivel 2: la calle',
   park: 'Nivel 3: el parque',
   market: 'Nivel 4: el mercado',
   construction: 'Nivel 5: la obra',
@@ -49,6 +49,13 @@ export class DevMenuScene extends Phaser.Scene {
     this.items = this.rooms.map((id, i) =>
       pixelText(this, GAME_W / 2, 96 + i * 18, LABELS[id] ?? id, { color: UI.dim, origin: 0.5 }),
     );
+    // Táctil: tocar una sala entra (franja de 240x18 por ítem: lo más alto que permite el espaciado).
+    this.rooms.forEach((id, i) => {
+      this.add
+        .zone(GAME_W / 2, 96 + i * 18, 240, 18)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => startNewGame(this, id));
+    });
 
     // Sin '·' de separador: la fuente no lo trae.
     pixelText(this, GAME_W / 2, GAME_H - 20, '↑ ↓ elegir     Enter entrar     Esc volver', { color: UI.dim, origin: 0.5 });

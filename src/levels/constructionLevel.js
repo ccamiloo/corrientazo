@@ -1,7 +1,5 @@
 import * as Phaser from 'phaser';
 import {
-  GAME_W,
-  GAME_H,
   TILE,
   DEPTH,
   COLORS,
@@ -10,16 +8,13 @@ import {
   SCAFFOLD_ARC,
   CRANE,
   BEAM_WAVE,
-  CHECKPOINT,
-  CONSTRUCTION,
   PUDDLE,
 } from '../config/constants.js';
-import { pixelText } from '../systems/pixelText.js';
 import { NpcActor } from '../entities/NpcActor.js';
 import { segmentHitsRect } from '../entities/Cable.js';
 import { PhaseClock } from '../systems/PhaseClock.js';
 import { tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
-import { PlayTimer } from '../systems/PlayTimer.js';
+import { goToResults } from '../systems/startGame.js';
 import { constructionDialogs as D } from '../data/dialogs/construction.js';
 import { propKey } from '../data/appliances.js';
 
@@ -32,8 +27,7 @@ import { propKey } from '../data/appliances.js';
 //  - Grúa: la carga de varillas y el cable del gancho ('crane').
 //  - Onda de la viga: franja que recorre la cara de arriba de la viga; mata solo apoyado en la viga ('beam').
 // Plataformas: tablones del andamio ('T'), sólidos solo por arriba (se atraviesan desde abajo y de lado).
-// Cascos: puntos de control. Guardan el flag `checkpoint` ({ x, y } en tiles), que GameScene usa como punto de
-// aparición. Flags (persisten al morir): talkedToMaestro, talkedToIngeniera, checkpoint, checkpointIndex.
+// Flags (persisten al morir): talkedToMaestro, talkedToIngeniera.
 //
 // Arte (room.art, como el mercado): construction_back (depth interior) trae postes, aisladores, la línea, parales y
 // crucetas del andamio, pluma, torre y mezcladora quieta; construction_tiles (RoomBuilder) trae sólidos y tablones.
@@ -467,52 +461,6 @@ export function createConstructionLevel(scene) {
     return !!s && standingIn(b, bm.top, s.x1, s.x2, BEAM_WAVE.edgeMarginPx);
   };
 
-  // --- Cascos (puntos de control) ---
-  // Con arte: sprite casco (origen abajo al centro en los pies) con 'idle' sin tomar, 'take' al tomarlo (una vez) y
-  // 'taken' después. Al rearmar la sala, los ya tomados arrancan en 'taken'.
-  const cascoKey = art('casco');
-  const takenIndex = () => scene.flag('checkpointIndex') ?? 0;
-  const checkpoints = room.checkpoints.map((cp, i) => {
-    const feet = tileToFeet(cp);
-    const sprite = cascoKey && scene.add.sprite(feet.x, feet.y, cascoKey, 0).setOrigin(0.5, 1).setDepth(DEPTH.props);
-    if (sprite) playIf(sprite, `${cascoKey}-${i + 1 <= takenIndex() ? 'taken' : 'idle'}`);
-    sprite?.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => playIf(sprite, `${cascoKey}-taken`));
-    return { ...cp, index: i + 1, feet, sprite };
-  });
-  const cpGfx = cascoKey ? null : scene.add.graphics().setDepth(DEPTH.props);
-  let cpGlowUntil = -Infinity;
-  const drawCheckpoints = () => {
-    if (!cpGfx) return;
-    const g = cpGfx;
-    g.clear();
-    for (const cp of checkpoints) {
-      const { x, y } = cp.feet; // centro en X, superficie
-      const taken = cp.index <= takenIndex();
-      // Gancho: varilla vertical con la punta doblada; el casco cuelga a la altura de la cabeza.
-      g.fillStyle(0x4c4f55).fillRect(x - 1, y - 44, 2, 10).fillRect(x - 1, y - 35, 4, 2);
-      const lit = taken && (scene.time.now < cpGlowUntil ? blink(80) : true);
-      g.fillStyle(lit ? COLORS.helmetLit : COLORS.helmet).fillRect(x - 6, y - 33, 12, 5).fillRect(x - 7, y - 28, 14, 2);
-      if (taken) g.lineStyle(1, COLORS.helmetLit, 0.6).strokeRect(x - 9, y - 36, 18, 11);
-    }
-  };
-  const updateCheckpoints = () => {
-    const b = player.body;
-    for (const cp of checkpoints) {
-      if (cp.index <= takenIndex()) continue;
-      const area = { left: cp.x * TILE - CHECKPOINT.reachPx, right: (cp.x + 1) * TILE + CHECKPOINT.reachPx, top: cp.feet.y - 44, bottom: cp.feet.y };
-      if (rectsOverlap(b, area)) {
-        // Tomar CP2 de un salto (sin pasar por CP1) deja CP1 como tomado: los anteriores también se iluminan.
-        for (const prev of checkpoints) {
-          if (prev.sprite && prev.index < cp.index && prev.index > takenIndex()) playIf(prev.sprite, `${cascoKey}-taken`);
-        }
-        scene.setFlag('checkpoint', { x: cp.x, y: cp.y });
-        scene.setFlag('checkpointIndex', cp.index);
-        cpGlowUntil = scene.time.now + CHECKPOINT.glowMs;
-        if (cp.sprite) cp.sprite.play(`${cascoKey}-take`);
-      }
-    }
-  };
-
   // --- NPCs ---
   const npcAt = (id, options) => {
     const data = room.npcs.find((n) => n.id === id);
@@ -530,17 +478,13 @@ export function createConstructionLevel(scene) {
       else say(D.maestro.first, () => scene.setFlag('talkedToMaestro'), hooks);
     },
   });
-  // Fin del nivel: diálogo de la ingeniera → cartel de fin → (por ahora) menú de desarrollo.
+  // Fin del juego: diálogo de la ingeniera → goToResults (para el timer, fundido a la escena final de la Seño y de
+  // ahí a la tabla de tiempos).
   let finished = false;
   const finish = () => {
     finished = true;
     scene.freeze();
-    PlayTimer.pause(scene.registry);
-    scene.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.ui);
-    pixelText(scene, GAME_W / 2, GAME_H / 2, D.end, { scale: 2, origin: 0.5, maxWidth: GAME_W - 40, align: 1 })
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui + 1);
-    scene.time.delayedCall(CONSTRUCTION.endHoldMs, () => scene.scene.start('DevMenu'));
+    goToResults(scene);
   };
   // Ingeniera: señala la escalera ('point') con su última línea y después de hablar; 'talk' en las demás.
   const pointing = () => (scene.flag('talkedToIngeniera') ? 'point' : 'idle');
@@ -605,13 +549,11 @@ export function createConstructionLevel(scene) {
       drawArc();
       drawCrane();
       drawWave();
-      drawCheckpoints();
       drawDebug();
       maestro.update(player);
       ingeniera.update(player);
       if (finished) return;
 
-      updateCheckpoints();
       const b = player.body;
       if (lineHits(b)) scene.die('line');
       else if (arcHits(b)) scene.die('arc');

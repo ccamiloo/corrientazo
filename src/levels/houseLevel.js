@@ -1,10 +1,11 @@
-import { GAME_W, GAME_H, TILE, DEPTH, COLORS } from '../config/constants.js';
-import { pixelText, PanelText } from '../systems/pixelText.js';
+import * as Phaser from 'phaser';
+import { GAME_W, TILE, DEPTH, COLORS, HOUSE } from '../config/constants.js';
+import { PanelText } from '../systems/pixelText.js';
 import { Interactable } from '../entities/Interactable.js';
 import { NpcActor } from '../entities/NpcActor.js';
 import { tileToFeet } from '../systems/RoomBuilder.js';
 import { TutorialHints } from '../systems/TutorialHints.js';
-import { PlayTimer } from '../systems/PlayTimer.js';
+import { showControlsScreen } from '../systems/ControlsScreen.js';
 import { APPLIANCES, applianceKey, propKey } from '../data/appliances.js';
 import { houseDialogs as D } from '../data/dialogs/house.js';
 
@@ -15,7 +16,7 @@ import { houseDialogs as D } from '../data/dialogs/house.js';
 //   talkedToGrandma    → activa el objetivo "Desconectar: n/5"; recién entonces responden los aparatos
 //   unplugged_<id>     → aparato desconectado (deja de responder)
 // Lo que todavía no toca no muestra el indicador ni responde (Interactable.canInteract).
-// Con todos desconectados se abre la puerta; al cruzarla termina el nivel.
+// Con todos desconectados se abre la puerta; al cruzarla, fundido a la calle (nivel 2).
 export function createHouseLevel(scene) {
   const { room, dialog, player } = scene;
   const total = room.appliances.length;
@@ -66,9 +67,13 @@ export function createHouseLevel(scene) {
 
   // --- HUD del objetivo ---
   const hud = new PanelText(scene, GAME_W - 6, 6, '', { bg: COLORS.dialogBg, padX: 5, padY: 3, origin: [1, 0] }).setDepth(DEPTH.ui);
+  // Siempre dice qué toca ahora: papá (piso 1) → abuela (terraza) → desconectar. Antes no se veía hasta hablar
+  // con la abuela y no quedaba claro qué hacer al empezar.
   const refreshHud = () => {
-    hud.setVisible(!!scene.flag('talkedToGrandma'));
-    hud.setText(`Desconectar: ${count()}/${total}`);
+    if (!scene.flag('talkedToDad')) hud.setText(D.objective.dad);
+    else if (!scene.flag('talkedToGrandma')) hud.setText(D.objective.grandma);
+    else if (count() < total) hud.setText(`Desconectar: ${count()}/${total}`);
+    else hud.setText(D.objective.door);
   };
 
   // --- NPCs ---
@@ -76,7 +81,16 @@ export function createHouseLevel(scene) {
   const dad = makeNpc('dad', {
     onInteract: () => {
       const hooks = dad.dialogHooks(player);
-      if (!scene.flag('talkedToDad')) say(D.dad.first, () => scene.setFlag('talkedToDad'), hooks);
+      if (!scene.flag('talkedToDad')) {
+        say(
+          D.dad.first,
+          () => {
+            scene.setFlag('talkedToDad');
+            refreshHud();
+          },
+          hooks,
+        );
+      }
       else if (count() < total) say(D.dad.pending, null, hooks);
       else say(D.dad.done, null, hooks);
     },
@@ -147,6 +161,7 @@ export function createHouseLevel(scene) {
         // El último aparato agrega la línea de "todo desconectado" después de la suya.
         say([...D.unplugged[a.id], ...(done ? D.allUnplugged : [])], () => {
           if (done) openDoor();
+          refreshHud();
         });
       },
     });
@@ -161,17 +176,24 @@ export function createHouseLevel(scene) {
   // --- Avisos del tutorial ---
   const hints = new TutorialHints(scene, room.hints);
 
+  // --- Inicio de la partida: pantalla de controles y, al cerrarla, papá grita desde la sala ---
+  // Una sola vez por partida (flag introShown; una partida nueva limpia los flags). El grito es un diálogo
+  // automático: no congela ni pide teclas, el jugador ya puede ir bajando mientras lo lee.
+  if (!scene.flag('introShown')) {
+    scene.setFlag('introShown');
+    showControlsScreen(scene, () => dialog.open(D.dad.shout, null, {}, { auto: true }));
+  }
+
   // --- Fin del nivel: cruzar la puerta abierta ---
   let finished = false;
   const doorLeft = doorData.x * TILE;
+  // Fundido a negro hacia la calle (nivel 2). El timer sigue: es la misma partida.
   const finish = () => {
     finished = true;
     scene.freeze();
-    PlayTimer.pause(scene.registry);
-    scene.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.ui);
-    pixelText(scene, GAME_W / 2, GAME_H / 2, D.end, { scale: 2, origin: 0.5 })
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui + 1);
+    const cam = scene.cameras.main;
+    cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start('Game', { roomId: 'street_1' }));
+    cam.fadeOut(HOUSE.exitFadeMs, 0, 0, 0);
   };
 
   return {

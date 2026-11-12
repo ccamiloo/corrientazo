@@ -22,7 +22,8 @@
 //      no se puede saltar sobre la lata (pega con H3). Bajar por encima de W2b (o por W2b apagado).
 //   4. Carretilla: pasar la bajante H4 apagada sin que la carretilla empuje contra ella.
 //   5. Cajas: 1 → 2 → 4 → 4 → 6 tiles (cols 88, 89, 90-92, 93-94), sin hueco. Subir en la pausa del
-//      pulpo y bajar el taco. Después, doña Carmen.
+//      pulpo y bajar el taco. Después, doña Carmen. Del lado de doña Carmen hay escalones de 2 y 4 tiles
+//      (cols 96 y 95, `extraCrates`) para volver al taco si se bajó sin apagarlo.
 
 export const market = {
   id: 'market',
@@ -58,10 +59,10 @@ export const market = {
     '..........P...................................................................................................', // 6
     '..........P......................FFFFFF......................................................KK...............', // 7  techo de las frutas (y = 112) y cajas de 6 (cols 93-94)
     '..........P......................FFFFFF......................................................KK...............', // 8
-    '..........P......AAAAA...........FFFFFF...................................................KKKKK...............', // 9  toldo 1 (cols 17-21, y = 144); cajas de 4 (cols 90-92)
-    '..........P..................AAA.FFFFFF...................................................KKKKK...............', // 10 toldo 2 (cols 29-31, y = 160)
-    '..........P..KK..................FFFFFF...MMMmmmMMmmmmMMmmmMMM...........................KKKKKK...............', // 11 cajas del pescado (cols 13-14), mostrador (y = 176)
-    '..........P..KK..................FFFFFF...MMMmmmMMmmmmMMmmmMMM..........................KKKKKKK...............', // 12 cajas de 1 (col 88)
+    '..........P......AAAAA...........FFFFFF...................................................KKKKKK..............', // 9  toldo 1 (cols 17-21, y = 144); cajas de 4 (cols 90-92)
+    '..........P..................AAA.FFFFFF...................................................KKKKKK..............', // 10 toldo 2 (cols 29-31, y = 160)
+    '..........P..KK..................FFFFFF...MMMmmmMMmmmmMMmmmMMM...........................KKKKKKKK.............', // 11 cajas del pescado (cols 13-14), mostrador (y = 176)
+    '..........P..KK..................FFFFFF...MMMmmmMMmmmmMMmmmMMM..........................KKKKKKKKK.............', // 12 cajas de 1 (col 88)
     '##############################################################################################################', // 13 piso (apoyo de todo)
     '##############################################################################################################', // 14
     '##############################################################################################################', // 15
@@ -115,6 +116,11 @@ export const market = {
 
   // Taco (px): rect en la pared; se alcanza parado en las cajas de las cols 93-94 (pies en standY).
   breaker: { x: 1504, y: 72, w: 16, h: 20, standY: 112 },
+
+  // Cajas agregadas DESPUÉS del arte (ya están en el layout como 'K'): market_tiles.png no las trae y la sala las
+  // dibuja recortando la caja de extraCratesSource. Si se regenera el arte, incluirlas y borrar esto.
+  extraCrates: [[95, 9], [95, 10], [95, 11], [95, 12], [96, 11], [96, 12]],
+  extraCratesSource: { x: 94, y: 12 },
 
   // Aviso de doña Carmen: la primera vez que el jugador pasa esta x (px).
   carmenWarnX: 1380,

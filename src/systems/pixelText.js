@@ -108,6 +108,8 @@ export class PanelText extends Phaser.GameObjects.Container {
     const left = -Math.round(w * this.boxOrigin[0]);
     const top = -Math.round(h * this.boxOrigin[1]);
     this.box.setPosition(left, top).setSize(w, h);
+    // Si la caja es un botón, su área de toque crece o se achica con el texto (p. ej. al cambiar a táctil).
+    this.box.input?.hitArea.setSize(w, h);
     this.label.setPosition(left + this.padX, top + this.padY);
     return this;
   }

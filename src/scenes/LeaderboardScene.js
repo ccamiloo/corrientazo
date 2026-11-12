@@ -1,11 +1,13 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, DEPTH, UI, RESULTS, HEADS } from '../config/constants.js';
+import { GAME_W, GAME_H, DEPTH, UI, RESULTS, HEADS, COLORS } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
 import { Leaderboard } from '../systems/Leaderboard.js';
 import { formatTimeShort } from '../systems/PlayTimer.js';
 import { Music } from '../systems/Music.js';
-import { pixelText } from '../systems/pixelText.js';
+import { pixelText, PanelText } from '../systems/pixelText.js';
 import { menuBackground } from '../systems/menuHelpers.js';
+import { prompt } from '../systems/prompts.js';
+import { Device } from '../systems/Device.js';
 
 const B = RESULTS.board;
 const C = RESULTS.card;
@@ -50,6 +52,9 @@ export class LeaderboardScene extends Phaser.Scene {
     else this.createSide();
 
     this.footer = pixelText(this, RESULTS.footerX, RESULTS.footerY, '', { color: RESULTS.footer, origin: [0.5, 0] });
+    this.footerId = null;
+    this.createRetryButtons();
+    Device.onChangeWhile(this, () => this.showFooter());
 
     // Teclado: solo cuando no está cargando (y tras un margen, para que la tecla de antes no salte la pantalla).
     this.acceptAt = this.time.now + RESULTS.inputDelayMs;
@@ -57,6 +62,12 @@ export class LeaderboardScene extends Phaser.Scene {
       if (this.state === 'loading' || this.time.now < this.acceptAt || event.repeat) return;
       if (this.state === 'failed' && event.key === 'Enter') this.fetchScores();
       else this.scene.start('Title');
+    });
+    // Toque: con la tabla lista, en cualquier parte vuelve al menú. Sin conexión en táctil hay dos botones
+    // (Reintentar / Salir), que manejan su propio toque (`over` no está vacío).
+    this.input.on('pointerdown', (pointer, over) => {
+      if (this.state !== 'done' || this.time.now < this.acceptAt || over.length) return;
+      this.scene.start('Title');
     });
 
     this.fetchScores();
@@ -109,7 +120,8 @@ export class LeaderboardScene extends Phaser.Scene {
     this.state = 'loading';
     this.rowsLayer.removeAll(true);
     this.status.setText('Cargando...').setVisible(true);
-    this.footer.setText('');
+    this.footerId = null;
+    this.showFooter();
     if (this.rankText) this.rankText.setText('...');
 
     // Resultado: primero se guarda el tiempo (el puesto y la fila resaltada dependen de que ya esté guardado).
@@ -133,25 +145,57 @@ export class LeaderboardScene extends Phaser.Scene {
     if (this.mode === 'result') this.rankText.setText(`${rank.rank} de ${total.total}`);
     else this.totalText.setText(total.total === 1 ? '1 partida' : `${total.total} partidas`);
     if (!top.rows.length) this.status.setText('Todavía no hay tiempos').setVisible(true);
-    this.ready('Presiona cualquier tecla');
+    this.ready('boardDone');
   }
 
   fail() {
     this.status.setText('Sin conexión').setVisible(true);
     if (this.rankText) this.rankText.setText('sin conexión');
-    this.ready('Enter: reintentar     Otra tecla: salir');
+    this.ready('boardFailed');
   }
 
   // El tiempo no se puede guardar (p. ej. menos de LEADERBOARD.minTimeMs, con F9 en desarrollo): sin reintento.
   invalid() {
     this.status.setText('Tiempo no válido').setVisible(true);
     this.rankText.setText('sin puesto');
-    this.ready('Presiona cualquier tecla');
+    this.ready('boardDone');
   }
 
-  ready(footer) {
-    this.state = footer.startsWith('Enter') ? 'failed' : 'done';
-    this.footer.setText(footer);
+  // `id` = texto del pie en prompts.js ('boardDone' o 'boardFailed').
+  ready(id) {
+    this.state = id === 'boardFailed' ? 'failed' : 'done';
+    this.footerId = id;
+    this.showFooter();
+  }
+
+  // Pie según estado y modo. Sin conexión en táctil: botones en vez de texto.
+  showFooter() {
+    const buttons = this.state === 'failed' && Device.isTouch;
+    this.footer.setText(this.state === 'loading' || !this.footerId ? '' : prompt(this.footerId));
+    this.retryButtons.forEach((b) => {
+      b.setVisible(buttons);
+      b.box.input.enabled = buttons;
+    });
+  }
+
+  // Botones táctiles de "Sin conexión" (cajas de 31 px de alto, ≈ 44 px de CSS en el celular).
+  createRetryButtons() {
+    const make = (x, text, onTap) => {
+      const b = new PanelText(this, x, RESULTS.footerY - 10, text, { bg: COLORS.dialogBg, padX: 10, padY: 10, origin: [0.5, 0] });
+      b.box.setInteractive({ useHandCursor: true });
+      b.box.on('pointerdown', () => {
+        if (this.state === 'failed' && this.time.now >= this.acceptAt) onTap();
+      });
+      return b;
+    };
+    this.retryButtons = [
+      make(RESULTS.footerX - 44, 'Reintentar', () => this.fetchScores()),
+      make(RESULTS.footerX + 44, 'Salir', () => this.scene.start('Title')),
+    ];
+    this.retryButtons.forEach((b) => {
+      b.setVisible(false);
+      b.box.input.enabled = false;
+    });
   }
 
   drawRows(rows) {

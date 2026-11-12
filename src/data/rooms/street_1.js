@@ -1,4 +1,4 @@
-// Nivel 2, sala 1: la calle. Greybox (sin arte). Aquí ya se puede morir: cable culebra y charcos.
+// Nivel 2: la calle. Aquí ya se puede morir: cable culebra y charcos.
 //
 // FORMATO (el mismo de house.js; este archivo se usará para generar el arte)
 // `layout`: una string por fila de tiles de 16x16, de arriba hacia abajo. Mide 80 x 17 tiles = 1280 x 272 px.
@@ -6,7 +6,7 @@
 //   'C'  carro parqueado (6 x 2)                         sólido
 //   'B'  banca (la del arco del cable y la del paradero) sólido
 //   'A'  andén elevado (1 tile)                          sólido
-//   'S'  cartelera del paradero (1 x 2, sobre el andén)  sólido
+//   'S'  cartelera del paradero (1 x 2, sobre el andén)  decorativa, SIN colisión (ver legend)
 //   'M'  matera (1 x 1)                                  sólido
 //   'T'  techo del paradero                              sólido
 //   'P'  poste dañado                                    decorativo, SIN colisión
@@ -25,8 +25,9 @@
 //   D. La tienda (63-79): teléfono y salida.
 //
 // Métricas (constants.js): salto máximo 61 px (3.8 tiles), velocidad 130 px/s.
-//   Subidas: suelo → carro 2 · suelo → andén 1 · andén → cartelera 2 · cartelera → techo 2 (con 1 tile
-//   de separación horizontal). Saltos en plano: el más largo es P1 (3 tiles).
+//   Subidas: suelo → carro 2 · suelo → andén 1. Saltos en plano: el más largo es P1 (3 tiles).
+//   El techo del paradero NO se alcanza: la cartelera es decorativa y del andén (o la banca o la matera) al techo
+//   hay 4 tiles (64 px > 61). Antes la cartelera era un escalón y por encima del techo se esquivaban todos los charcos.
 //   Bajo el techo del paradero quedan 4 tiles libres: se camina y se suben banca y matera sin pegar la cabeza.
 // Alcance del cable (ancla a 12 tiles, ±40°, colisión a lo largo de todo el cable): en el extremo del arco
 //   la punta queda a 7.7 tiles del poste y 2.8 tiles sobre el suelo. De pie en el suelo el cable llega
@@ -37,6 +38,9 @@ export const street_1 = {
   id: 'street_1',
   background: 'street',
   script: 'street_1', // lógica: src/levels/street1Level.js
+
+  // La cartelera no colisiona: si fuera sólida serviría de escalón hacia el techo del paradero (ver Métricas).
+  legend: { S: { texture: 'tile-stop-sign', solid: false } },
 
   layout: [
     '................................................................................', // 0  cielo

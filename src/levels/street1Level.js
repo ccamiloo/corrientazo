@@ -10,13 +10,13 @@ import { propKey } from '../data/appliances.js';
 
 const STREET_EXIT_FADE_MS = 500; // fundido al salir hacia el parque
 
-// Nivel 2, sala 1: la calle.
+// Nivel 2: la calle.
 //
 // Peligros: el cable culebra (péndulo con luz, mata al tocarlo en cualquier punto) y los charcos, que se
 // electrifican en ola cuando la punta del cable toca el charco de origen en la parte baja del arco.
 //
 // Misión (flags de la sala, persisten en el registry aunque el jugador muera):
-//   talkedToNeighbor → el teléfono ya permite llamar
+//   talkedToNeighbor → el vecino ya dio la explicación (cambia su línea al volver a hablarle)
 //   powerCut         → cable quieto y sin chispas, charcos apagados para siempre, salida abierta
 export function createStreet1Level(scene) {
   const { room, dialog, player } = scene;
@@ -141,8 +141,8 @@ export function createStreet1Level(scene) {
   const phone = new Interactable(scene, phonePos.x, phonePos.y, phoneArt ? propKey('phone') : 'phone', {
     frame: phoneArt ? 0 : undefined,
     onInteract: () => {
-      if (!scene.flag('talkedToNeighbor')) say(D.phone.notYet);
-      else if (scene.flag('powerCut')) say(D.phone.already);
+      // No hace falta haber hablado con el vecino: quien ya sabe qué hacer puede llamar de una.
+      if (scene.flag('powerCut')) say(D.phone.already);
       else {
         // El corte se aplica al cerrar el diálogo, para que se vea pasar (y la línea "dejó de echar chispas").
         if (phoneArt) phone.setFrame(1);

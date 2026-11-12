@@ -119,7 +119,9 @@ export const CONTROLS = {
 // --- Desarrollo ---
 // TEMPORAL: interruptores de herramientas de desarrollo. Al terminar el juego, ponerlos en false.
 export const DEV = {
-  menu: true, // F3 abre el menú para entrar directo a cualquier sala (DevMenuScene)
+  // F3 abre el menú para entrar directo a cualquier sala (DevMenuScene). Solo en `npm run dev`: en el build los
+  // niveles se juegan en orden, sin saltos.
+  menu: import.meta.env.DEV,
 };
 
 // --- Nivel 2: cable culebra ---
@@ -222,6 +224,11 @@ export const KITE_STRING = {
 export const GRASS = {
   flickerMs: 120, // alterna los frames A y B del arte (o titila el greybox)
   pieceOffsetY: -8, // borde de arriba de las piezas de 16x10 respecto a la superficie (208 → y = 200)
+};
+
+// --- Nivel 1: salida de la casa ---
+export const HOUSE = {
+  exitFadeMs: 500, // fundido a negro hacia la calle
 };
 
 // --- Nivel 3: fin del nivel ---
@@ -352,16 +359,6 @@ export const BEAM_WAVE = {
   edgeMarginPx: 2, // el hitbox debe meterse más de esto en la franja para que mate
 };
 
-// --- Nivel 5: cascos (puntos de control) ---
-export const CHECKPOINT = {
-  reachPx: 4, // px extra a cada lado del tile del casco para tomarlo
-  glowMs: 600, // destello al tomarlo
-};
-
-// --- Nivel 5: fin ---
-export const CONSTRUCTION = {
-  endHoldMs: 3500, // ms del cartel de fin antes de volver al menú de desarrollo
-};
 
 // --- Música ---
 // Una pista por "momento" del juego, siempre en loop. Los archivos viven en public/assets/music/
@@ -541,6 +538,9 @@ export const RESULTS = {
     stampScale: 1.1,
     stampMs: 100,
     startDelayMs: 250, // ms entre el sello y el arranque del juego
+    // Táctil: el <input> HTML invisible cubre la comanda entera (ne_ticket.png, 232x136); el pie va alineado a
+    // la derecha en footerRight y el botón "Listo" (centro x, y; w x h) a su derecha.
+    touch: { ticketW: 232, ticketH: 136, footerRight: 330, done: { x: 380, y: 241, w: 60, h: 24 } },
   },
   board: {
     x: 10, // lb_board.png, 296x254
@@ -574,6 +574,42 @@ export const RESULTS = {
   footerY: 236,
   inputDelayMs: 300, // en la tabla: margen antes de aceptar teclas
 };
+// Escena final en el restaurante de la Seño (public/assets/ui/ending/README.txt; docs/mockups/mock_final_*.png).
+// Posiciones en px de pantalla; "esquina" = arriba a la izquierda. Comida, bandeja, vapor, confeti y personajes van a
+// escala 2 (sprites de media resolución). Tiempos en ms desde que arranca la escena.
+export const ENDING = {
+  fadeMs: 300, // fundido a negro al salir del juego y fundido de entrada aquí
+  seno: { x: 290, feetY: 222 }, // origen abajo al centro, flipX (mira a la izquierda)
+  player: { fromX: -30, toX: 96, feetY: 250, walkMs: 1600 },
+  tray: { x: 150, y: 194 },
+  food: { x: 146, dx: 20, y: 170, popFrom: 1.4, popMs: 120 }, // frame i en (x + i·dx, y)
+  steam: { x: 154, y: 150 },
+  tick: { x: 22, y: 117, dy: 12, popMs: 160 },
+  title: { x: 107, fromY: -60, y: 6, dropMs: 700 },
+  banner: { cx: 240, y: 56, growMs: 200 },
+  receipt: { fromX: 490, x: 330, y: 72, slideMs: 300 },
+  receiptText: { name: { x: 338, y: 122 }, right: 462, timeY: 205, deathsY: 218, color: 0x2b1e2e },
+  stamp: { x: 376, y: 146, fromScale: 2, slamMs: 90, atMs: 600 },
+  hint: { x: 67, y: 252, stepMs: 450, atMs: 900 },
+  bubble: { cx: 300, bottom: 150, maxWidth: 150, padX: 6, padY: 4, fill: 0xfffaf0 },
+  // Fases (inicio de cada una).
+  serveAt: 2200, // la Seño habla
+  platesAt: 2800, // empieza a servir
+  plateEveryMs: 450,
+  partyAt: 5000, // ¡CORRIENTAZO!
+  billAt: 7500, // la cuenta
+  flashMs: 80,
+  shakeMs: 150,
+  shakeIntensity: 0.006,
+  cheerStepMs: 260, // la Seño alterna los brazos con un saltito
+  cheerHopPx: 4,
+  playerHops: 2,
+  playerHopPx: 24,
+  playerHopMs: 420, // un salto completo (sube y baja)
+  confetti: { count: 60, emitMs: 2000, fallMin: 60, fallMax: 110, swayPx: 10, spinMax: 6 },
+  inputDelayMs: 400, // en la cuenta: margen antes de aceptar la tecla que lleva a la tabla
+};
+
 // Tabla de tiempos (Firestore): límites que exigen las reglas publicadas en la consola. Si cambian allá, cambiarlos
 // aquí; Leaderboard.submitScore valida con esto antes de mandar (lo que no cumpla, las reglas lo rechazarían).
 export const LEADERBOARD = {
@@ -602,4 +638,8 @@ export const MENU = {
 // Caja de diálogo: efecto de máquina de escribir.
 export const DIALOG = {
   charsPerSecond: 45, // letras por segundo; interactuar mientras se escribe completa la línea
+  // Modo automático (avisos que no detienen el juego): cada línea, ya escrita, queda en pantalla
+  // autoHoldBaseMs + autoHoldPerCharMs por letra antes de pasar sola (≈ 5 s para una línea de 110 letras).
+  autoHoldBaseMs: 1400,
+  autoHoldPerCharMs: 32,
 };

@@ -6,6 +6,8 @@ import { startNewGame } from '../systems/startGame.js';
 import { Music } from '../systems/Music.js';
 import { pixelText } from '../systems/pixelText.js';
 import { menuBackground, menuCharacter, drawPedestal } from '../systems/menuHelpers.js';
+import { bindPrompt } from '../systems/prompts.js';
+import { Fullscreen } from '../systems/Fullscreen.js';
 import { NAME_MAX, isNameChar, sanitizeName, loadPlayerName, savePlayerName } from '../systems/playerName.js';
 
 const N = RESULTS.name;
@@ -21,6 +23,9 @@ export class NameEntryScene extends Phaser.Scene {
     Music.play(this, 'menus');
     const character = currentCharacter(this.registry);
     this.confirmed = false;
+    // Phaser reutiliza la instancia de la escena: lo del input HTML se reinicia aquí.
+    this.field = null;
+    this.gameShift = 0;
 
     // Fondo: la calle de la selección, oscurecida.
     menuBackground(this);
@@ -52,9 +57,18 @@ export class NameEntryScene extends Phaser.Scene {
     const charName = pixelText(this, ...at(N.charName.x, N.charName.y), character.name, { color: RESULTS.ink, outline: false });
     this.ticket.add([this.big, this.small, this.cursor, this.counter, head, charName]);
 
-    // Pie.
-    pixelText(this, N.footer.leftRight, N.footer.y, 'Escribe tu nombre', { color: RESULTS.footer, origin: [1, 0] }).setScrollFactor(0);
-    pixelText(this, N.footer.rightLeft, N.footer.y, 'Enter para confirmar', { color: RESULTS.footer }).setScrollFactor(0);
+    // Pie. Con teclado: "Escribe tu nombre | Enter para confirmar". En táctil: un solo texto centrado a la
+    // izquierda del botón Listo.
+    const footLeft = pixelText(this, N.footer.leftRight, N.footer.y, '', { color: RESULTS.footer, origin: [1, 0] }).setScrollFactor(0);
+    const footRight = pixelText(this, N.footer.rightLeft, N.footer.y, '', { color: RESULTS.footer }).setScrollFactor(0);
+    bindPrompt(this, footRight, 'nameConfirm');
+    this.doneButton = this.makeDoneButton();
+    bindPrompt(this, footLeft, 'nameWrite', {}, (touch) => {
+      footLeft.setPosition(touch ? N.touch.footerRight : N.footer.leftRight, N.footer.y);
+      this.doneButton.setVisible(touch);
+      this.setTouchInput(touch);
+    });
+    this.events.once('shutdown', () => this.setTouchInput(false));
 
     // Cursor que titila.
     this.time.addEvent({ delay: N.cursor.blinkMs, loop: true, callback: () => !this.confirmed && this.cursor.setVisible(!this.cursor.visible) });
@@ -62,12 +76,162 @@ export class NameEntryScene extends Phaser.Scene {
     // Prellenado: el de esta sesión o el último guardado en el navegador.
     this.name = sanitizeName(this.registry.get('playerName') ?? loadPlayerName() ?? '');
     this.refresh();
+    if (this.field) this.field.input.value = this.name;
 
     this.seen = new WeakSet(); // eventos ya procesados (ver onKey)
     this.input.keyboard.on('keydown', (event) => this.onKey(event));
   }
 
+  // Botón "Listo" en pixel art (táctil): caja amarilla con contorno y sombra, 64x30 px (≥ 32 de alto con el
+  // área de toque ampliada). Presionado baja 2 px.
+  makeDoneButton() {
+    const { x, y, w, h } = N.touch.done;
+    const btn = this.add.container(x, y).setScrollFactor(0);
+    const g = this.add.graphics();
+    const draw = (down) => {
+      const dy = down ? 2 : 0;
+      g.clear();
+      if (!down) g.fillStyle(UI.outline).fillRect(-w / 2 + 1, -h / 2 + 3, w, h); // sombra
+      g.fillStyle(UI.outline).fillRect(-w / 2 - 1, -h / 2 - 1 + dy, w + 2, h + 2);
+      g.fillStyle(UI.yellow).fillRect(-w / 2, -h / 2 + dy, w, h);
+      g.fillStyle(0xfff3b0).fillRect(-w / 2, -h / 2 + dy, w, 2);
+      label.setY(dy - 5);
+    };
+    const label = pixelText(this, 0, 0, 'Listo', { color: UI.outline, outline: false, origin: [0.5, 0] });
+    btn.add([g, label]);
+    draw(false);
+    const hit = this.add.zone(x, y, w + 16, h + 12).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', () => draw(true));
+    hit.on('pointerout', () => draw(false));
+    hit.on('pointerup', () => {
+      draw(false);
+      this.confirm();
+    });
+    btn.hit = hit;
+    btn.setVisible = (v) => {
+      Phaser.GameObjects.Container.prototype.setVisible.call(btn, v);
+      hit.input.enabled = v;
+      return btn;
+    };
+    return btn;
+  }
+
+  // --- Nombre en el celular: un <input> HTML real, invisible, encima de la comanda ---
+  // Solo así aparece el teclado del sistema (con ñ, tildes y autocorrección apagada). Tocar la comanda toca el
+  // input mismo (está encima), y además se llama focus() dentro del mismo toque, que es lo que exige iOS.
+  setTouchInput(on) {
+    if (on && !this.field) {
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      Object.assign(input, { type: 'text', maxLength: NAME_MAX, autocomplete: 'off', spellcheck: false, value: this.name ?? '' });
+      input.setAttribute('autocapitalize', 'words');
+      input.setAttribute('autocorrect', 'off');
+      input.setAttribute('enterkeyhint', 'done');
+      input.setAttribute('aria-label', '¿Cómo te llamas?');
+      // Invisible pero tocable. font-size 16 px: con menos, iOS hace zoom a la página al enfocar.
+      Object.assign(form.style, { position: 'fixed', margin: '0', zIndex: '5' });
+      Object.assign(input.style, {
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        opacity: '0',
+        border: '0',
+        padding: '0',
+        background: 'transparent',
+        color: 'transparent',
+        caretColor: 'transparent',
+        fontSize: '16px',
+        touchAction: 'manipulation',
+      });
+      form.append(input);
+      (document.getElementById('app') ?? document.body).append(form); // en #app: se ve también en pantalla completa
+
+      input.addEventListener('pointerdown', () => input.focus());
+      // Cada cambio: solo caracteres permitidos (los mismos del teclado físico) y máximo NAME_MAX.
+      input.addEventListener('input', () => {
+        const clean = sanitizeName(input.value);
+        if (clean !== input.value) input.value = clean;
+        if (this.confirmed) return;
+        this.name = clean;
+        this.refresh();
+      });
+      // Enter / "Listo" del teclado del sistema.
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.confirm();
+      });
+      // Con el input enfocado, las teclas son para el input: que Phaser no las cancele (W, A, S, D, Espacio y
+      // flechas están "capturadas" por los controles de otras escenas).
+      input.addEventListener('focus', () => {
+        this.input.keyboard.disableGlobalCapture();
+        this.keepVisible();
+      });
+      input.addEventListener('blur', () => {
+        this.input.keyboard?.enableGlobalCapture();
+        this.shiftGame(0);
+      });
+
+      this.field = { form, input };
+      this.onViewport = () => {
+        this.placeField();
+        if (document.activeElement === input) this.keepVisible();
+      };
+      window.addEventListener('resize', this.onViewport);
+      window.visualViewport?.addEventListener('resize', this.onViewport);
+      window.visualViewport?.addEventListener('scroll', this.onViewport);
+      this.scale.on('resize', this.onViewport);
+      this.placeField();
+    } else if (!on && this.field) {
+      this.field.input.blur();
+      this.field.form.remove();
+      this.field = null;
+      window.removeEventListener('resize', this.onViewport);
+      window.visualViewport?.removeEventListener('resize', this.onViewport);
+      window.visualViewport?.removeEventListener('scroll', this.onViewport);
+      this.scale.off('resize', this.onViewport);
+      this.input.keyboard?.enableGlobalCapture();
+      this.shiftGame(0);
+    }
+  }
+
+  // Ubica el input sobre la comanda: rect del canvas en pantalla y su escala (px de CSS por px del juego).
+  placeField() {
+    if (!this.field) return;
+    const r = this.game.canvas.getBoundingClientRect();
+    const k = r.width / GAME_W;
+    const shift = this.gameShift ?? 0; // el rect ya incluye el corrimiento: se descuenta para no sumarlo dos veces
+    Object.assign(this.field.form.style, {
+      left: `${r.left + N.ticket.x * k}px`,
+      top: `${r.top + shift + N.ticket.y * k}px`,
+      width: `${N.touch.ticketW * k}px`,
+      height: `${N.touch.ticketH * k}px`,
+      transform: shift ? `translateY(${-shift}px)` : '',
+    });
+  }
+
+  // Con el teclado del sistema abierto, el área visible se achica (visualViewport): si la comanda queda tapada,
+  // se sube el juego entero (y el input con él) lo justo para que el renglón del nombre quede a la vista.
+  keepVisible() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const r = this.game.canvas.getBoundingClientRect();
+    const k = r.width / GAME_W;
+    const shift = this.gameShift ?? 0;
+    const nameBottom = r.top + shift + (N.text.y + 28) * k; // borde de abajo del nombre, sin corrimiento
+    const visibleBottom = vv.offsetTop + vv.height;
+    this.shiftGame(Math.max(0, Math.ceil(nameBottom - visibleBottom + 8)));
+  }
+
+  shiftGame(px) {
+    if ((this.gameShift ?? 0) === px) return;
+    this.gameShift = px;
+    this.game.canvas.style.transform = px ? `translateY(${-px}px)` : '';
+    this.placeField();
+  }
+
   onKey(event) {
+    // Teclas escritas en el input HTML (táctil): las maneja el propio input, no se duplican aquí.
+    if (this.field && event.target === this.field.input) return;
     // Phaser 4 procesa la cola del teclado en cuanto llega cada evento, pero solo la vacía al final del paso:
     // si llegan dos teclas en el mismo paso (escribiendo rápido, o con el loop frenado en una pestaña de
     // fondo), la segunda vuelve a entregar la primera. El evento repetido es el mismo objeto: se ignora.
@@ -80,6 +244,8 @@ export class NameEntryScene extends Phaser.Scene {
     if (key === 'Enter') {
       this.confirm();
     } else if (key === 'Escape') {
+      // Si ese Esc fue el del navegador para salir de pantalla completa, no es "volver a la selección".
+      if (Fullscreen.active || Fullscreen.justExited()) return;
       this.scene.start('CharacterSelect');
     } else if (key === 'Backspace') {
       event.preventDefault();
@@ -115,6 +281,10 @@ export class NameEntryScene extends Phaser.Scene {
     this.cursor.setVisible(false);
     this.registry.set('playerName', name);
     savePlayerName(name);
+    if (this.field) {
+      this.field.input.value = name;
+      this.field.input.blur(); // cierra el teclado del sistema antes de empezar
+    }
     // Sello: la comanda salta a 1.1 y vuelve a 1 en 100 ms; después arranca el juego como antes.
     this.ticket.setScale(N.stampScale);
     this.tweens.add({ targets: this.ticket, scale: 1, duration: N.stampMs, ease: 'Quad.easeOut' });

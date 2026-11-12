@@ -7,7 +7,7 @@ seno (npcs/seno.png, 24x32, escala 2, flipX para mirar a la izquierda): origen a
   Anims: idle, talk, serve (brazos hacia la bandeja), cheer (brazos arriba).
 Jugador (su sheet, escala 2): origen abajo al centro; entra caminando de x -30 a x 96, pies en y 250.
 end_tray.png (52x4, escala 2): esquina (150,194).
-end_food.png (5 frames de 16x12, escala 2; orden: sopa, principio, seco, jugo, postre): frame i con esquina en (146 + i*20, 170).
+end_food.png (5 frames de 16x12, escala 2; orden: sopa, patacón, seco, jugo, postre): frame i con esquina en (146 + i*20, 170).
 end_steam.png (4 frames 8x10, escala 2, 6 fps): esquina (154,150) cuando ya está la sopa.
 end_tick.png (12x10, escala 1): chulito i en (22, 117 + i*12).
 end_title.png (3 frames 266x50, ola suave 5 fps): esquina (107,6).

@@ -5,6 +5,17 @@ import { Controls } from '../systems/Controls.js';
 import { Music } from '../systems/Music.js';
 import { pixelText, PanelText } from '../systems/pixelText.js';
 import { menuBackground, menuCharacter } from '../systems/menuHelpers.js';
+import { bindPrompt } from '../systems/prompts.js';
+import { SaveGame } from '../systems/SaveGame.js';
+import { formatTimeShort } from '../systems/PlayTimer.js';
+
+// Botón de texto: en táctil la caja crece a 31 px de alto (≈ 44 px de CSS en un celular, buen tamaño para el
+// dedo); con teclado y mouse queda como siempre.
+function touchPad(panel, touch) {
+  panel.padX = touch ? 8 : 6;
+  panel.padY = touch ? 10 : 3;
+  panel.setText(panel.label.text ?? '');
+}
 
 // Pantalla de título (docs/mockups/mockup_inicio_x3.png, a x3; aquí todo va en px del juego, 480x270).
 // Preload → Title → CharacterSelect.
@@ -34,7 +45,14 @@ export class TitleScene extends Phaser.Scene {
     this.button.on('pointerout', () => !this.leaving && this.button.setFrame(0));
     this.button.on('pointerdown', () => this.play());
 
-    pixelText(this, GAME_W / 2, 191, 'Enter o clic para jugar', { color: UI.lightYellow, origin: 0.5 }).setScrollFactor(0);
+    // "Enter o clic para jugar" / "Toca para empezar" (prompts.js), al día si cambia el modo.
+    bindPrompt(this, pixelText(this, GAME_W / 2, 191, '', { color: UI.lightYellow, origin: 0.5 }).setScrollFactor(0), 'titleStart');
+
+    // En táctil, tocar en cualquier parte que no sea un botón empieza (y ese primer toque desbloquea el audio en
+    // iOS: Phaser lo hace solo con el primer gesto). `over` = objetos interactivos bajo el dedo.
+    this.input.on('pointerdown', (pointer, over) => {
+      if (!over.length) this.play();
+    });
 
     // Los personajes en fila sobre el andén, en idle.
     const spacing = 38;
@@ -43,14 +61,34 @@ export class TitleScene extends Phaser.Scene {
 
     // Botón "Tabla de tiempos" (solo lectura), arriba a la derecha donde el cielo está libre. Clic o tecla T.
     // La caja va con scrollFactor 0 también: la cámara de esta pantalla se mueve y el área de clic la seguiría.
-    const board = new PanelText(this, GAME_W - 6, 6, 'T: Tabla de tiempos', { bg: COLORS.dialogBg, padX: 6, padY: 3, origin: [1, 0] });
+    const board = new PanelText(this, GAME_W - 6, 6, '', { bg: COLORS.dialogBg, padX: 6, padY: 3, origin: [1, 0] });
+    bindPrompt(this, board, 'titleBoard', {}, (touch) => touchPad(board, touch));
     board.box.setScrollFactor(0).setInteractive({ useHandCursor: true });
     board.box.on('pointerover', () => board.label.setColor(UI.yellow));
     board.box.on('pointerout', () => board.label.setColor(UI.white));
     board.box.on('pointerdown', () => this.openBoard());
     this.input.keyboard.on('keydown-T', () => this.openBoard());
 
+    // Partida guardada (SaveGame): "Continuar" arriba a la izquierda, con el nivel y el tiempo. C o toque.
+    this.save = SaveGame.load();
+    if (this.save) {
+      const level = `(nivel ${SaveGame.levelNumber(this.save.roomId)}, ${formatTimeShort(this.save.elapsedMs)})`;
+      const cont = new PanelText(this, 6, 6, '', { bg: COLORS.dialogBg, padX: 6, padY: 3, origin: [0, 0] });
+      bindPrompt(this, cont, 'titleContinue', { level }, (touch) => touchPad(cont, touch));
+      cont.box.setScrollFactor(0).setInteractive({ useHandCursor: true });
+      cont.box.on('pointerover', () => cont.label.setColor(UI.yellow));
+      cont.box.on('pointerout', () => cont.label.setColor(UI.white));
+      cont.box.on('pointerdown', () => this.continueGame());
+      this.input.keyboard.on('keydown-C', () => this.continueGame());
+    }
+
     this.leaving = false;
+  }
+
+  continueGame() {
+    if (this.leaving || !this.save) return;
+    this.leaving = true;
+    SaveGame.continueGame(this, this.save);
   }
 
   openBoard() {

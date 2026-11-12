@@ -104,11 +104,12 @@ export const house = {
 
   // Avisos del tutorial: aparecen una sola vez. `trigger: 'start'` al entrar; si no, al pisar la zona.
   // `requires`: flag de misión necesario para que el aviso pueda aparecer.
+  // `prompt`: id del texto en src/systems/prompts.js (versión de teclado o táctil según el modo).
   hints: [
-    { id: 'move', text: '← → para moverte', trigger: 'start', doneWhen: 'moved' },
+    { id: 'move', prompt: 'hintMove', trigger: 'start', doneWhen: 'moved' },
     // La escalera A se baja cayendo por el hueco; el salto hace falta recién para volver a subir,
     // después de hablar con papá. Por eso el aviso espera a ese momento.
-    { id: 'jump', text: 'Espacio para saltar', zone: { x: 33, y: 18, w: 9, h: 7 }, requires: 'talkedToDad', doneWhen: 'jumped' },
-    { id: 'talk', text: '↓ para hablar', zone: { x: 17, y: 18, w: 15, h: 7 }, doneWhen: 'talked' },
+    { id: 'jump', prompt: 'hintJump', zone: { x: 33, y: 18, w: 9, h: 7 }, requires: 'talkedToDad', doneWhen: 'jumped' },
+    { id: 'talk', prompt: 'hintTalk', zone: { x: 17, y: 18, w: 15, h: 7 }, doneWhen: 'talked' },
   ],
 };

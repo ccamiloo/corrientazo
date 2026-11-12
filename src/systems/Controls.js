@@ -1,7 +1,14 @@
 import { CONTROLS } from '../config/constants.js';
+import { TouchControls } from './TouchControls.js';
 
-// Agrupa varias teclas por acción (p. ej. jump = Espacio, W, Flecha arriba)
-// para que el resto del código pregunte por acciones y no por teclas concretas.
+// Agrupa varias teclas por acción (p. ej. jump = Espacio, W, Flecha arriba) y les suma los botones táctiles,
+// para que el resto del código pregunte por acciones y no por teclas ni dedos.
+//
+// Táctil (src/systems/TouchControls.js): left/right/jump mantenidos y las marcas de flanco de jump/interact.
+// Las marcas táctiles solo cuentan mientras los botones se ven (los muestra GameScene), así un toque en otra
+// pantalla nunca llega al juego.
+//
+// Atajos con nombre (equivalen a isDown/justDown): left, right, jumpHeld, jumpPressed(), interactPressed().
 export class Controls {
   constructor(scene, map = CONTROLS) {
     this.actions = {};
@@ -22,16 +29,48 @@ export class Controls {
     }
   }
 
-  // true mientras alguna tecla de la acción esté presionada.
-  isDown(action) {
-    return this.actions[action].some((k) => k.isDown);
+  // Estado táctil de una acción mantenida.
+  touchDown(action) {
+    if (!TouchControls.visible) return false;
+    const s = TouchControls.state;
+    if (action === 'left') return s.left;
+    if (action === 'right') return s.right;
+    if (action === 'jump') return s.jumpHeld;
+    return false;
   }
 
-  // true una sola vez por pulsación: lee y "consume" la marca.
+  // true mientras alguna tecla (o el botón táctil) de la acción esté presionada.
+  isDown(action) {
+    return (this.actions[action]?.some((k) => k.isDown) ?? false) || this.touchDown(action);
+  }
+
+  // true una sola vez por pulsación: lee y "consume" la marca (de teclado y táctil).
   // Cada acción debe consultarse una sola vez por frame (y en cada frame, para no acumular pulsaciones viejas).
   justDown(action) {
     const was = this.pressed[action];
     this.pressed[action] = false;
-    return was;
+    // La marca táctil se consume siempre (aunque los botones estén ocultos) para que no quede pendiente.
+    const touched = (action === 'jump' || action === 'interact') && TouchControls.consume(action);
+    return !!was || (touched && TouchControls.visible);
+  }
+
+  get left() {
+    return this.isDown('left');
+  }
+
+  get right() {
+    return this.isDown('right');
+  }
+
+  get jumpHeld() {
+    return this.isDown('jump');
+  }
+
+  jumpPressed() {
+    return this.justDown('jump');
+  }
+
+  interactPressed() {
+    return this.justDown('interact');
   }
 }

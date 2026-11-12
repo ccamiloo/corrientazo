@@ -1,5 +1,7 @@
 import { GAME_W, DEPTH, COLORS, TILE } from '../config/constants.js';
 import { PanelText } from './pixelText.js';
+import { prompt } from './prompts.js';
+import { Device } from './Device.js';
 
 // Avisos de tutorial que aparecen UNA sola vez, en el momento justo.
 // Cada aviso (datos de la sala):
@@ -17,11 +19,20 @@ export class TutorialHints {
     this.text = new PanelText(scene, GAME_W / 2, 20, '', { bg: COLORS.dialogBg, padX: 6, padY: 3, origin: [0.5, 0] })
       .setDepth(DEPTH.ui)
       .setAlpha(0);
+
+    // Si el modo cambia (teclado ⇄ táctil) con un aviso en pantalla, se reescribe.
+    Device.onChangeWhile(scene, () => this.active && this.text.setText(this.textOf(this.active)));
+  }
+
+  textOf(hint) {
+    return hint.prompt ? prompt(hint.prompt) : hint.text;
   }
 
   update() {
     const { scene } = this;
     const player = scene.player;
+    // Con una pantalla encima (los controles al empezar) los avisos esperan: aparecen al cerrarla.
+    if (scene.overlayOpen) return;
 
     // ¿Terminó el aviso activo?
     if (this.active && this.isDone(this.active)) this.hide();
@@ -40,7 +51,7 @@ export class TutorialHints {
     this.active = hint;
     // Posición del jugador al aparecer: 'moved' se mide desde aquí.
     this.startX = this.scene.player.x;
-    this.text.setText(hint.text);
+    this.text.setText(this.textOf(hint));
     this.scene.tweens.killTweensOf(this.text);
     this.scene.tweens.add({ targets: this.text, alpha: 1, duration: 200 });
   }
@@ -59,7 +70,7 @@ export class TutorialHints {
       case 'jumped':
         return player.body.velocity.y < 0;
       case 'talked':
-        return dialog.isOpen;
+        return dialog.blocking;
       default:
         return false;
     }

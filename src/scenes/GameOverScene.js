@@ -4,6 +4,7 @@ import { currentCharacter } from '../data/characters.js';
 import { pixelText } from '../systems/pixelText.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
 import { Music } from '../systems/Music.js';
+import { Device } from '../systems/Device.js';
 
 // Tip genérico, para las muertes sin tip propio (la sala lo pasa en data.tip según la causa).
 const TIPS = ['Nunca toques un cable suelto: aléjate y llama a un técnico.'];
@@ -143,19 +144,27 @@ export class GameOverScene extends Phaser.Scene {
     pixelText(this, b.textX, b.textY, `x ${this.registry.get('deaths') ?? 1}`, { color: UI.yellow }).setDepth(LAYER.badge);
   }
 
-  // Desde aquí cualquier tecla reintenta: aparece la pastilla, que parpadea entre sus dos frames.
+  // Desde aquí cualquier tecla (o un toque en cualquier parte) reintenta: aparece la pastilla, que parpadea
+  // entre sus dos frames. En táctil, la versión "toca" (go_hint_touch), y cambia sola si cambia el modo.
   acceptInput() {
     const h = GO.hint;
-    const hint = this.add.sprite(h.x, h.y, 'go-hint', 0).setDepth(LAYER.hint);
+    const key = () => (Device.isTouch && this.textures.exists('go-hint-touch') ? 'go-hint-touch' : 'go-hint');
+    const hint = this.add.sprite(h.x, h.y, key(), 0).setDepth(LAYER.hint);
+    Device.onChangeWhile(this, () => hint.setTexture(key(), hint.frame.name));
     let lit = true;
     this.time.addEvent({ delay: h.stepMs, loop: true, callback: () => hint.setFrame((lit = !lit) ? 0 : 1) });
 
-    this.input.keyboard.once('keydown', () => {
+    let done = false;
+    const retry = () => {
+      if (done) return;
+      done = true;
       PlayTimer.resume(this.registry);
       // La escena Game sigue viva (pausada) debajo: se le quita el filtro y scene.start la reinicia limpia
       // (shutdown + create), a la vez que detiene esta escena.
       this.scene.get('Game').clearDeathFilter();
       this.scene.start('Game', { roomId: this.roomId });
-    });
+    };
+    this.input.keyboard.once('keydown', retry);
+    this.input.once('pointerdown', retry);
   }
 }
