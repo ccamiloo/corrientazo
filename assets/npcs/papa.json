@@ -1,0 +1,48 @@
+{
+  "image": "papa.png",
+  "frameWidth": 24,
+  "frameHeight": 32,
+  "facing": "right (usar flipX para que mire al jugador)",
+  "frames": {
+    "idle": 0,
+    "blink": 1,
+    "talk_a": 2,
+    "talk_b": 3,
+    "action_a": 4,
+    "action_b": 5
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        0,
+        5,
+        0,
+        5,
+        0,
+        5,
+        1,
+        0,
+        5,
+        0,
+        5,
+        4,
+        4,
+        4,
+        5
+      ],
+      "frameRate": 4,
+      "repeat": -1
+    },
+    "talk": {
+      "frames": [
+        2,
+        3,
+        2,
+        0
+      ],
+      "frameRate": 8,
+      "repeat": -1
+    }
+  },
+  "note": "idle incluye el vapor del tinto (frames 0 y 5), un parpadeo y un sorbo. Al hablar usa 'talk'."
+}

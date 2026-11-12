@@ -1,0 +1,51 @@
+{
+  "image": "seno.png",
+  "frameWidth": 24,
+  "frameHeight": 32,
+  "facing": "right (usar flipX para que mire al jugador)",
+  "frames": {
+    "idle": 0,
+    "blink": 1,
+    "talk_a": 2,
+    "talk_b": 3,
+    "serve": 4,
+    "cheer": 5
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "frameRate": 2,
+      "repeat": -1
+    },
+    "talk": {
+      "frames": [
+        2,
+        3,
+        2,
+        0
+      ],
+      "frameRate": 8,
+      "repeat": -1
+    },
+    "serve": {
+      "frames": [
+        4
+      ],
+      "frameRate": 1,
+      "repeat": -1
+    },
+    "cheer": {
+      "frames": [
+        5,
+        5
+      ],
+      "frameRate": 1,
+      "repeat": -1
+    }
+  }
+}

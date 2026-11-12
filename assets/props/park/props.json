@@ -1,0 +1,64 @@
+{
+  "grass_live": {
+    "image": "grass_live.png",
+    "frameWidth": 16,
+    "frameHeight": 10
+  },
+  "swing_seat": {
+    "image": "swing_seat.png",
+    "frameWidth": 24,
+    "frameHeight": 6
+  },
+  "windsock": {
+    "image": "windsock.png",
+    "frameWidth": 24,
+    "frameHeight": 24
+  },
+  "tree_spark": {
+    "image": "tree_spark.png",
+    "frameWidth": 6,
+    "frameHeight": 6,
+    "animations": {
+      "fall": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 12,
+        "repeat": -1
+      }
+    }
+  },
+  "cp_flash": {
+    "image": "cp_flash.png",
+    "frameWidth": 17,
+    "frameHeight": 17,
+    "animations": {
+      "flash": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 22,
+        "repeat": 0
+      }
+    }
+  },
+  "tree_live": {
+    "image": "tree_live.png",
+    "frameWidth": 48,
+    "frameHeight": 112,
+    "animations": {
+      "buzz": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      }
+    }
+  }
+}

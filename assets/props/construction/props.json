@@ -1,0 +1,224 @@
+{
+  "concrete": {
+    "image": "concrete.png",
+    "frameWidth": 16,
+    "frameHeight": 6
+  },
+  "mixer": {
+    "image": "mixer.png",
+    "frameWidth": 64,
+    "frameHeight": 40,
+    "animations": {
+      "idle": {
+        "frames": [
+          0
+        ],
+        "frameRate": 1,
+        "repeat": -1
+      },
+      "shake": {
+        "frames": [
+          1,
+          2
+        ],
+        "frameRate": 20,
+        "repeat": -1
+      },
+      "spin": {
+        "frames": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "frameRate": 6,
+        "repeat": -1
+      }
+    }
+  },
+  "spark": {
+    "image": "spark.png",
+    "frameWidth": 9,
+    "frameHeight": 9,
+    "animations": {
+      "crackle": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 16,
+        "repeat": -1
+      }
+    }
+  },
+  "spark_blue": {
+    "image": "spark_blue.png",
+    "frameWidth": 9,
+    "frameHeight": 9,
+    "animations": {
+      "crackle": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 16,
+        "repeat": -1
+      }
+    }
+  },
+  "arc": {
+    "image": "arc.png",
+    "frameWidth": 40,
+    "frameHeight": 118,
+    "animations": {
+      "strike": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 20,
+        "repeat": -1
+      }
+    }
+  },
+  "line_spark": {
+    "image": "line_spark.png",
+    "frameWidth": 32,
+    "frameHeight": 10,
+    "animations": {
+      "crackle": {
+        "frames": [
+          0,
+          1,
+          2
+        ],
+        "frameRate": 14,
+        "repeat": -1
+      }
+    }
+  },
+  "plank_fx": {
+    "image": "plank_fx.png",
+    "frameWidth": 16,
+    "frameHeight": 7,
+    "animations": {
+      "warn": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 12,
+        "repeat": -1
+      },
+      "lit": {
+        "frames": [
+          2
+        ],
+        "frameRate": 1,
+        "repeat": -1
+      }
+    }
+  },
+  "trolley": {
+    "image": "trolley.png",
+    "frameWidth": 16,
+    "frameHeight": 8,
+    "animations": {
+      "roll": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      }
+    }
+  },
+  "load": {
+    "image": "load.png",
+    "frameWidth": 44,
+    "frameHeight": 12,
+    "animations": {
+      "buzz": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      }
+    }
+  },
+  "boom_spark": {
+    "image": "boom_spark.png",
+    "frameWidth": 12,
+    "frameHeight": 8,
+    "animations": {
+      "zap": {
+        "frames": [
+          0,
+          1,
+          2
+        ],
+        "frameRate": 20,
+        "repeat": 0
+      }
+    }
+  },
+  "beam_wave": {
+    "image": "beam_wave.png",
+    "frameWidth": 16,
+    "frameHeight": 8,
+    "animations": {
+      "run": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 14,
+        "repeat": -1
+      }
+    }
+  },
+  "casco": {
+    "image": "casco.png",
+    "frameWidth": 20,
+    "frameHeight": 36,
+    "animations": {
+      "idle": {
+        "frames": [
+          0
+        ],
+        "frameRate": 1,
+        "repeat": -1
+      },
+      "take": {
+        "frames": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          2
+        ],
+        "frameRate": 10,
+        "repeat": 0
+      },
+      "taken": {
+        "frames": [
+          2
+        ],
+        "frameRate": 1,
+        "repeat": -1
+      }
+    }
+  }
+}

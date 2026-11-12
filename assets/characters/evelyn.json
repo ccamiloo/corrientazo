@@ -1,0 +1,63 @@
+{
+  "image": "evelyn.png",
+  "frameWidth": 24,
+  "frameHeight": 32,
+  "facing": "right (usar flipX para caminar a la izquierda)",
+  "frames": {
+    "idle": 0,
+    "walk_1": 1,
+    "walk_2": 2,
+    "jump": 3,
+    "fall": 4,
+    "shock_1": 5,
+    "shock_2": 6,
+    "burnt": 7,
+    "pass": 8
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        0
+      ],
+      "frameRate": 1,
+      "repeat": -1
+    },
+    "walk": {
+      "frames": [
+        1,
+        8,
+        2,
+        8
+      ],
+      "frameRate": 8,
+      "repeat": -1
+    },
+    "jump": {
+      "frames": [
+        3
+      ],
+      "frameRate": 1,
+      "repeat": 0
+    },
+    "fall": {
+      "frames": [
+        4
+      ],
+      "frameRate": 1,
+      "repeat": 0
+    },
+    "shock": {
+      "frames": [
+        5,
+        6,
+        5,
+        6,
+        5,
+        6,
+        7
+      ],
+      "frameRate": 10,
+      "repeat": 0
+    }
+  }
+}

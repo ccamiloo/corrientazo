@@ -1,0 +1,143 @@
+{
+  "puddle": {
+    "image": "puddle.png",
+    "frameWidth": 16,
+    "frameHeight": 7
+  },
+  "awning": {
+    "image": "awning.png",
+    "frameWidth": 16,
+    "frameHeight": 12
+  },
+  "hookup_spark": {
+    "image": "hookup_spark.png",
+    "frameWidth": 9,
+    "frameHeight": 9,
+    "animations": {
+      "crackle": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 16,
+        "repeat": -1
+      }
+    }
+  },
+  "metal_live": {
+    "image": "metal_live.png",
+    "frameWidth": 16,
+    "frameHeight": 16,
+    "animations": {
+      "buzz": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 10,
+        "repeat": -1
+      }
+    }
+  },
+  "freezer_light": {
+    "image": "freezer_light.png",
+    "frameWidth": 16,
+    "frameHeight": 10
+  },
+  "freezer_waves": {
+    "image": "freezer_waves.png",
+    "frameWidth": 40,
+    "frameHeight": 24,
+    "animations": {
+      "hum": {
+        "frames": [
+          0,
+          1,
+          2
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      }
+    }
+  },
+  "cart": {
+    "image": "cart.png",
+    "frameWidth": 32,
+    "frameHeight": 16,
+    "animations": {
+      "roll": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      }
+    }
+  },
+  "pulpo": {
+    "image": "pulpo.png",
+    "frameWidth": 32,
+    "frameHeight": 24,
+    "animations": {
+      "idle": {
+        "frames": [
+          0
+        ],
+        "frameRate": 1,
+        "repeat": -1
+      },
+      "warn": {
+        "frames": [
+          1,
+          2
+        ],
+        "frameRate": 8,
+        "repeat": -1
+      },
+      "burst": {
+        "frames": [
+          3,
+          4
+        ],
+        "frameRate": 14,
+        "repeat": -1
+      },
+      "smoke": {
+        "frames": [
+          6,
+          7,
+          6,
+          7,
+          6,
+          7,
+          5
+        ],
+        "frameRate": 4,
+        "repeat": 0
+      }
+    }
+  },
+  "pulpo_spark": {
+    "image": "pulpo_spark.png",
+    "frameWidth": 6,
+    "frameHeight": 6,
+    "animations": {
+      "fly": {
+        "frames": [
+          0,
+          1
+        ],
+        "frameRate": 12,
+        "repeat": -1
+      }
+    }
+  },
+  "breaker": {
+    "image": "breaker.png",
+    "frameWidth": 16,
+    "frameHeight": 20
+  }
+}

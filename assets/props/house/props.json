@@ -1,0 +1,66 @@
+{
+  "tv": {
+    "note": "12 filas transparentes abajo: se apoya sobre el mueble del fondo",
+    "image": "tv.png",
+    "frameWidth": 28,
+    "frameHeight": 30,
+    "frames": {
+      "on": 0,
+      "off": 1
+    },
+    "origin": "abajo al centro"
+  },
+  "consola": {
+    "note": "12 filas transparentes abajo: se apoya sobre el mueble del fondo",
+    "image": "consola.png",
+    "frameWidth": 18,
+    "frameHeight": 18,
+    "frames": {
+      "on": 0,
+      "off": 1
+    },
+    "origin": "abajo al centro"
+  },
+  "cargador": {
+    "image": "cargador.png",
+    "frameWidth": 16,
+    "frameHeight": 22,
+    "frames": {
+      "on": 0,
+      "off": 1
+    },
+    "origin": "abajo al centro"
+  },
+  "radio": {
+    "image": "radio.png",
+    "frameWidth": 22,
+    "frameHeight": 26,
+    "frames": {
+      "on": 0,
+      "off": 1
+    },
+    "origin": "abajo al centro"
+  },
+  "licuadora": {
+    "note": "incluye su pedazo de mesón: el mesón del fondo deja el hueco exacto (x 123-149)",
+    "image": "licuadora.png",
+    "frameWidth": 26,
+    "frameHeight": 34,
+    "frames": {
+      "on": 0,
+      "off": 1
+    },
+    "origin": "abajo al centro"
+  },
+  "puerta": {
+    "note": "frame 0 cerrada, frame 1 abierta",
+    "image": "puerta.png",
+    "frameWidth": 32,
+    "frameHeight": 48,
+    "frames": {
+      "closed": 0,
+      "open": 1
+    },
+    "origin": "abajo al centro"
+  }
+}
