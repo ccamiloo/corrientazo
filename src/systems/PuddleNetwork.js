@@ -1,5 +1,9 @@
 import { PUDDLE, COLORS, DEPTH, TILE } from '../config/constants.js';
 
+// Spritesheet del charco (props/street_1/puddle.png): 4 piezas por fila y una fila por estado.
+const PIECE = { left: 0, midA: 1, midB: 2, right: 3 };
+const ROW = { off: 0, warn: 1, liveA: 2, liveB: 3 };
+
 // Charcos conectados por los que viaja la corriente.
 //
 // Un charco es una zona sin colisión sobre el suelo. Estados: 'off' (apagado), 'warn' (titila: se va a
@@ -11,9 +15,14 @@ import { PUDDLE, COLORS, DEPTH, TILE } from '../config/constants.js';
 // t - n · hopDelayS. Así la corriente avanza como una ola por el grafo, y como sourceOn sirve para
 // cualquier t (el cable es determinista), el aviso se calcula mirando hacia adelante.
 export class PuddleNetwork {
-  constructor(scene, { puddles, links, sourceId, sourceOn }) {
+  // `artKey` (opcional): spritesheet de piezas de 16x7 (props/street_1/puddle.png). Si no está cargado, se
+  // dibuja el greybox de antes con Graphics.
+  // `stateFn(p, t)` (opcional): reemplaza la propagación por la red; devuelve 'off' | 'warn' | 'live' para cada
+  // charco (el mercado: todos se prenden juntos con el congelador). Con stateFn, links y sourceId pueden faltar.
+  constructor(scene, { puddles, links = [], sourceId, sourceOn, artKey, stateFn }) {
     this.scene = scene;
     this.sourceOn = sourceOn;
+    this.stateFn = stateFn;
     this.powered = true;
 
     this.puddles = puddles.map((p) => ({
@@ -29,8 +38,8 @@ export class PuddleNetwork {
 
     // BFS desde el origen: hops = número mínimo de conexiones hasta el charco que toca el cable.
     const source = byId[sourceId];
-    source.hops = 0;
-    const queue = [source];
+    const queue = source ? [source] : [];
+    if (source) source.hops = 0;
     while (queue.length) {
       const cur = queue.shift();
       for (const [a, b] of this.links) {
@@ -42,13 +51,32 @@ export class PuddleNetwork {
       }
     }
 
-    // Detrás de los sólidos (depth tiles - 1): el agua que pasa "por debajo" del carro, el andén, la
-    // banca o la matera queda tapada por ellos sin recortes a mano.
-    this.gfx = scene.add.graphics().setDepth(DEPTH.tiles - 1);
+    this.art = artKey && scene.textures.exists(artKey) ? artKey : null;
+    if (this.art) {
+      // Con arte: el agua va ENCIMA de los tiles (depth tiles + 1), sobre la cara de arriba de la calle.
+      // Una pieza por columna en el rango exacto del charco: izquierda, medios alternando a/b, derecha.
+      for (const p of this.puddles) {
+        p.pieces = [];
+        for (let i = 0; i < p.w; i++) {
+          const kind = i === 0 ? PIECE.left : i === p.w - 1 ? PIECE.right : i % 2 === 1 ? PIECE.midA : PIECE.midB;
+          const img = scene.add
+            .image(p.left + i * TILE, p.surface + PUDDLE.pieceOffsetY, this.art, kind)
+            .setOrigin(0)
+            .setDepth(DEPTH.tiles + 1);
+          p.pieces.push({ img, kind });
+        }
+      }
+      this.gfx = scene.add.graphics().setDepth(DEPTH.tiles + 1); // chorritos
+    } else {
+      // Greybox: detrás de los sólidos (depth tiles - 1), así el agua que pasa "por debajo" del carro, el
+      // andén, la banca o la matera queda tapada por ellos sin recortes a mano.
+      this.gfx = scene.add.graphics().setDepth(DEPTH.tiles - 1);
+    }
   }
 
   // Estado de un charco en el instante t.
   stateAt(p, t) {
+    if (this.stateFn) return this.powered ? this.stateFn(p, t) : 'off';
     if (!this.powered || p.hops === Infinity) return 'off';
     const local = t - p.hops * PUDDLE.hopDelayS; // el instante "del origen" que le llega ahora a este charco
     if (this.sourceOn(local)) return 'live';
@@ -84,6 +112,38 @@ export class PuddleNetwork {
   }
 
   draw() {
+    if (this.art) this.drawArt();
+    else this.drawGreybox();
+  }
+
+  // Con arte: cada estado elige una fila del spritesheet. warn alterna warn/off cada flickerMs (titila) y
+  // live alterna live_a/live_b cada liveFlickerMs. Los chorritos siguen siendo una línea de 1 px.
+  drawArt() {
+    const now = this.scene.time.now;
+    const blink = Math.floor(now / PUDDLE.flickerMs) % 2 === 0;
+    const liveB = Math.floor(now / PUDDLE.liveFlickerMs) % 2 === 1;
+    const rowOf = (state) => {
+      if (state === 'live') return liveB ? ROW.liveB : ROW.liveA;
+      if (state === 'warn') return blink ? ROW.warn : ROW.off;
+      return ROW.off;
+    };
+    for (const p of this.puddles) {
+      const row = rowOf(p.state);
+      for (const { img, kind } of p.pieces) img.setFrame(row * 4 + kind);
+    }
+
+    const g = this.gfx;
+    g.clear();
+    for (const [a, b] of this.links) {
+      const [l, r] = a.left < b.left ? [a, b] : [b, a];
+      const far = a.hops > b.hops ? a : b; // el que se electrifica después: así la ola avanza también por aquí
+      g.fillStyle(far.state === 'live' ? PUDDLE.streamLive : PUDDLE.streamOff);
+      g.fillRect(l.right, l.surface + PUDDLE.streamOffsetY, r.left - l.right, 1);
+    }
+  }
+
+  // Greybox (sin arte): rectángulos de color.
+  drawGreybox() {
     const g = this.gfx;
     const h = PUDDLE.heightPx;
     const flashOn = Math.floor(this.scene.time.now / PUDDLE.flickerMs) % 2 === 0;

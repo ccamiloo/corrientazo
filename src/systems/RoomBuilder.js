@@ -24,7 +24,20 @@ const SOLID_TILES = {
   M: 'tile-planter',
 };
 const DECOR_TILES = { '|': 'column', P: 'pole' };
-export const isSolid = (ch) => ch in SOLID_TILES;
+
+// Leyenda efectiva de una sala: la global más lo que la sala redefina en `legend`
+// ({ carácter: { texture, solid } }). Hace falta porque un mismo carácter puede significar cosas distintas:
+// en el parque 'T' es el tronco del árbol (decorativo), no un techo sólido.
+export function legendOf(room) {
+  const solid = { ...SOLID_TILES };
+  const decor = { ...DECOR_TILES };
+  for (const [ch, def] of Object.entries(room.legend ?? {})) {
+    delete solid[ch];
+    delete decor[ch];
+    (def.solid ? solid : decor)[ch] = def.texture;
+  }
+  return { solid, decor, isSolid: (ch) => ch in solid };
+}
 
 export function roomSize(room) {
   return { cols: room.layout[0].length, rows: room.layout.length };
@@ -33,6 +46,7 @@ export function roomSize(room) {
 export function buildRoom(scene, room) {
   const { layout } = room;
   const { cols, rows } = roomSize(room);
+  const { solid, decor, isSolid } = legendOf(room);
 
   // 1) Visual
   // Si la sala trae su estructura dibujada como una sola imagen (art.tiles), se usa esa y no se dibuja
@@ -43,10 +57,10 @@ export function buildRoom(scene, room) {
   for (let r = 0; r < rows && !tilesArt; r++) {
     for (let c = 0; c < cols; c++) {
       const ch = layout[r][c];
-      const key = SOLID_TILES[ch] ?? DECOR_TILES[ch];
+      const key = solid[ch] ?? decor[ch];
       if (!key) continue;
       // Las decoraciones van detrás de los tiles sólidos (una columna no tapa el techo que sostiene).
-      const depth = ch in SOLID_TILES ? DEPTH.tiles : DEPTH.tiles - 1;
+      const depth = ch in solid ? DEPTH.tiles : DEPTH.tiles - 1;
       scene.add.image(c * TILE, r * TILE, key).setOrigin(0).setDepth(depth);
     }
   }
@@ -97,6 +111,7 @@ export function buildRoom(scene, room) {
 // continuo que detectar y usamos el punto de apoyo del spawn como referencia.
 export function findGroundY(room) {
   const { layout } = room;
+  const { isSolid } = legendOf(room);
   let r = layout.length;
   while (r > 0 && [...layout[r - 1]].every(isSolid)) r--;
   if (r === layout.length) return tileToFeet(room.spawn).y;

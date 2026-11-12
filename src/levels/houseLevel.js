@@ -1,5 +1,7 @@
-import { GAME_W, GAME_H, TILE, DEPTH, COLORS, FONT } from '../config/constants.js';
+import { GAME_W, GAME_H, TILE, DEPTH, COLORS } from '../config/constants.js';
+import { pixelText, PanelText } from '../systems/pixelText.js';
 import { Interactable } from '../entities/Interactable.js';
+import { NpcActor } from '../entities/NpcActor.js';
 import { tileToFeet } from '../systems/RoomBuilder.js';
 import { TutorialHints } from '../systems/TutorialHints.js';
 import { PlayTimer } from '../systems/PlayTimer.js';
@@ -23,13 +25,18 @@ export function createHouseLevel(scene) {
     lines.map((l) =>
       l.replaceAll('{n}', count()).replaceAll('{total}', total).replaceAll('{left}', total - count()),
     );
-  // Abre un diálogo con el jugador congelado y lo descongela al cerrarlo.
-  const say = (lines, onClose) => {
+  // Abre un diálogo con el jugador congelado y lo descongela al cerrarlo. `hooks` (opcional): ganchos de
+  // DialogBox; con un NPC, npc.dialogHooks(player) hace que mire al jugador y anime 'talk' al escribir.
+  const say = (lines, onClose, hooks) => {
     scene.freeze();
-    dialog.open(fill(lines), () => {
-      scene.unfreeze();
-      onClose?.();
-    });
+    dialog.open(
+      fill(lines),
+      () => {
+        scene.unfreeze();
+        onClose?.();
+      },
+      hooks,
+    );
   };
 
   // --- Pared del fondo: delante del parallax, detrás de los tiles ---
@@ -58,48 +65,49 @@ export function createHouseLevel(scene) {
   };
 
   // --- HUD del objetivo ---
-  const hud = scene.add
-    .text(GAME_W - 6, 6, '', {
-      fontFamily: FONT,
-      fontSize: '10px',
-      color: COLORS.text,
-      backgroundColor: 'rgba(17,20,27,0.85)',
-      padding: { x: 5, y: 3 },
-    })
-    .setOrigin(1, 0)
-    .setScrollFactor(0)
-    .setDepth(DEPTH.ui);
+  const hud = new PanelText(scene, GAME_W - 6, 6, '', { bg: COLORS.dialogBg, padX: 5, padY: 3, origin: [1, 0] }).setDepth(DEPTH.ui);
   const refreshHud = () => {
     hud.setVisible(!!scene.flag('talkedToGrandma'));
     hud.setText(`Desconectar: ${count()}/${total}`);
   };
 
   // --- NPCs ---
-  const dad = makeNpc('dad', () => {
-    if (!scene.flag('talkedToDad')) say(D.dad.first, () => scene.setFlag('talkedToDad'));
-    else if (count() < total) say(D.dad.pending);
-    else say(D.dad.done);
+  // Papá: 'idle' en loop (vapor del tinto, parpadeo y sorbo).
+  const dad = makeNpc('dad', {
+    onInteract: () => {
+      const hooks = dad.dialogHooks(player);
+      if (!scene.flag('talkedToDad')) say(D.dad.first, () => scene.setFlag('talkedToDad'), hooks);
+      else if (count() < total) say(D.dad.pending, null, hooks);
+      else say(D.dad.done, null, hooks);
+    },
   });
 
-  // La abuela no responde hasta haber hablado con papá.
-  const grandma = makeNpc(
-    'grandma',
-    () => {
+  // Abuela: cuelga ropa ('hang', mirando a la derecha aunque el jugador esté cerca) hasta que el jugador le
+  // habla; después queda en 'idle' para siempre. No responde hasta haber hablado con papá.
+  const grandma = makeNpc('grandma', {
+    ambient: () => (scene.flag('talkedToGrandma') ? 'idle' : 'hang'),
+    lockedAmbient: 'hang',
+    canInteract: () => !!scene.flag('talkedToDad'),
+    onInteract: () => {
+      const hooks = grandma.dialogHooks(player);
       if (!scene.flag('talkedToGrandma')) {
-        say(D.grandma.lesson, () => {
-          scene.setFlag('talkedToGrandma');
-          refreshHud();
-        });
-      } else if (count() < total) say(D.grandma.pending);
-      else say(D.grandma.done);
+        say(
+          D.grandma.lesson,
+          () => {
+            scene.setFlag('talkedToGrandma');
+            refreshHud();
+          },
+          hooks,
+        );
+      } else if (count() < total) say(D.grandma.pending, null, hooks);
+      else say(D.grandma.done, null, hooks);
     },
-    () => !!scene.flag('talkedToDad'),
-  );
+  });
 
-  function makeNpc(id, onInteract, canInteract) {
+  function makeNpc(id, options) {
     const data = room.npcs.find((n) => n.id === id);
     const pos = tileToFeet(data);
-    return new Interactable(scene, pos.x, pos.y, data.texture, { onInteract, canInteract });
+    return new NpcActor(scene, pos.x, pos.y, data.texture, options);
   }
 
   // --- Puerta de salida ---
@@ -161,9 +169,7 @@ export function createHouseLevel(scene) {
     scene.freeze();
     PlayTimer.pause(scene.registry);
     scene.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.ui);
-    scene.add
-      .text(GAME_W / 2, GAME_H / 2, D.end, { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: COLORS.text })
-      .setOrigin(0.5)
+    pixelText(scene, GAME_W / 2, GAME_H / 2, D.end, { scale: 2, origin: 0.5 })
       .setScrollFactor(0)
       .setDepth(DEPTH.ui + 1);
   };
@@ -172,6 +178,8 @@ export function createHouseLevel(scene) {
     interactables: [dad, grandma, door, ...appliances],
     update() {
       hints.update();
+      dad.update(player);
+      grandma.update(player);
       // Cruzó la puerta: el centro del jugador pasó la mitad del vano, en el piso 1.
       if (!finished && doorOpen && player.x > doorLeft + TILE && player.body.bottom > (doorData.y - 1) * TILE) finish();
     },

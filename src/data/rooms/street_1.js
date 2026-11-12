@@ -58,9 +58,19 @@ export const street_1 = {
     '################################################################################', // 16 4 filas de suelo: regla de la caja de diálogo
   ],
 
+  // Arte de la sala (public/assets/rooms/street_1/ y public/assets/props/street_1/, ver README.txt ahí).
+  // Ambas imágenes miden lo mismo que la sala (1280x272) y van en (0, 0). `tiles` reemplaza el dibujo tile
+  // por tile (sólidos, poste, columnas, tapas); la colisión sigue saliendo del layout. `wall` es la fachada
+  // de la tienda y el vidrio del paradero. `props`: charcos, chispas del cable, teléfono y valla de salida.
+  art: {
+    wall: 'assets/rooms/street_1/street1_back.png', // depth -50
+    tiles: 'assets/rooms/street_1/street1_tiles.png', // depth 0
+    props: 'assets/props/street_1/props.json',
+  },
+
   spawn: { x: 2, y: 13 },
 
-  npcs: [{ id: 'neighbor', texture: 'npc-neighbor', x: 6, y: 13 }],
+  npcs: [{ id: 'neighbor', texture: 'vecino', x: 6, y: 13 }],
 
   // Cable culebra. `x, y`: ancla (centro de la columna 30, borde superior de la fila 1 = punta del poste).
   // El largo se calcula hasta el suelo, así la punta lo toca justo abajo del todo.

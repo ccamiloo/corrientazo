@@ -1,4 +1,5 @@
-import { DEPTH, FONT } from '../config/constants.js';
+import { DEPTH } from '../config/constants.js';
+import { PanelText } from './pixelText.js';
 import { PlayTimer, formatTime } from './PlayTimer.js';
 
 const KEY = 'debug';
@@ -10,16 +11,9 @@ export class DebugOverlay {
     this.scene = scene;
     this.player = player;
 
-    this.text = scene.add
-      .text(4, 4, '', {
-        fontFamily: FONT,
-        fontSize: '8px',
-        color: '#7CFC9A',
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        padding: { x: 3, y: 2 },
-      })
-      .setScrollFactor(0)
-      .setDepth(DEPTH.debug);
+    this.text = new PanelText(scene, 4, 4, '', { color: 0x7cfc9a, bg: 0x000000, bgAlpha: 0.6, padX: 3, padY: 2 }).setDepth(
+      DEPTH.debug,
+    );
 
     this.apply(this.enabled);
   }

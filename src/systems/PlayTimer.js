@@ -41,6 +41,15 @@ export const PlayTimer = {
   },
 };
 
+// Formato de la tabla de tiempos: m:ss.cc (minutos sin ceros a la izquierda, centésimas truncadas), p. ej. 7:51.88.
+export function formatTimeShort(ms) {
+  const total = Math.max(0, Math.floor(ms));
+  const m = Math.floor(total / 60000);
+  const s = Math.floor((total % 60000) / 1000);
+  const cs = Math.floor((total % 1000) / 10);
+  return `${m}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+}
+
 export function formatTime(ms) {
   const total = Math.floor(ms);
   const m = Math.floor(total / 60000);

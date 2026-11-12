@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, COLORS, FONT } from '../config/constants.js';
+import { GAME_W, GAME_H, COLORS, UI } from '../config/constants.js';
+import { pixelText } from '../systems/pixelText.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { currentCharacter } from '../data/characters.js';
 import { Controls } from '../systems/Controls.js';
@@ -14,6 +15,9 @@ import { Music } from '../systems/Music.js';
 const LABELS = {
   house: 'Nivel 1: la casa',
   street_1: 'Nivel 2: la calle (sala 1)',
+  park: 'Nivel 3: el parque',
+  market: 'Nivel 4: el mercado',
+  construction: 'Nivel 5: la obra',
   testRoom: 'Sala de prueba',
 };
 
@@ -37,28 +41,17 @@ export class DevMenuScene extends Phaser.Scene {
     this.rooms = Object.keys(ROOMS);
     this.index = 0;
 
-    this.add
-      .text(GAME_W / 2, 36, 'Menú de desarrollo', { fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: COLORS.text })
-      .setOrigin(0.5);
+    pixelText(this, GAME_W / 2, 36, 'Menú de desarrollo', { scale: 2, origin: 0.5 });
 
     const character = currentCharacter(this.registry);
-    this.add
-      .text(GAME_W / 2, 58, `Personaje: ${character.name}`, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
-      .setOrigin(0.5);
+    pixelText(this, GAME_W / 2, 60, `Personaje: ${character.name}`, { color: UI.dim, origin: 0.5 });
 
     this.items = this.rooms.map((id, i) =>
-      this.add
-        .text(GAME_W / 2, 96 + i * 18, LABELS[id] ?? id, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
-        .setOrigin(0.5),
+      pixelText(this, GAME_W / 2, 96 + i * 18, LABELS[id] ?? id, { color: UI.dim, origin: 0.5 }),
     );
 
-    this.add
-      .text(GAME_W / 2, GAME_H - 20, '↑ ↓ elegir   ·   Enter entrar   ·   Esc volver', {
-        fontFamily: FONT,
-        fontSize: '8px',
-        color: COLORS.textDim,
-      })
-      .setOrigin(0.5);
+    // Sin '·' de separador: la fuente no lo trae.
+    pixelText(this, GAME_W / 2, GAME_H - 20, '↑ ↓ elegir     Enter entrar     Esc volver', { color: UI.dim, origin: 0.5 });
 
     this.refresh();
   }
@@ -66,7 +59,7 @@ export class DevMenuScene extends Phaser.Scene {
   refresh() {
     this.items.forEach((t, i) => {
       const selected = i === this.index;
-      t.setColor(selected ? COLORS.text : COLORS.textDim);
+      t.setColor(selected ? UI.yellow : UI.dim);
       t.setText(`${selected ? '> ' : '  '}${LABELS[this.rooms[i]] ?? this.rooms[i]}${selected ? ' <' : '  '}`);
     });
   }

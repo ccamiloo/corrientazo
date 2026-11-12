@@ -1,12 +1,18 @@
 import { testRoom } from './testRoom.js';
 import { house } from './house.js';
 import { street_1 } from './street_1.js';
+import { park } from './park.js';
+import { market } from './market.js';
+import { construction } from './construction.js';
 
 // Registro de habitaciones por id. Para agregar una sala nueva: crea su archivo y súmala aquí.
 export const ROOMS = {
   [testRoom.id]: testRoom,
   [house.id]: house,
   [street_1.id]: street_1,
+  [park.id]: park,
+  [market.id]: market,
+  [construction.id]: construction,
 };
 
 // Sala con la que empieza una partida nueva (después de elegir personaje).

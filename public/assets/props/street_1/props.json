@@ -1,0 +1,49 @@
+{
+  "puddle": {
+    "image": "puddle.png",
+    "frameWidth": 16,
+    "frameHeight": 7,
+    "frames": "4 por fila: 0 izquierda, 1 medio_a, 2 medio_b, 3 derecha. Filas: off (0-3), warn (4-7), live_a (8-11), live_b (12-15)",
+    "y": 207,
+    "note": "Cada charco se arma con piezas de 16 px en su rango exacto de x: izquierda, medios alternando a/b, derecha. live alterna live_a y live_b cada 100 ms."
+  },
+  "cable_spark": {
+    "image": "cable_spark.png",
+    "frameWidth": 17,
+    "frameHeight": 17,
+    "origin": "centro (8, 8) en la punta del cable",
+    "animations": {
+      "spark": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "frameRate": 14,
+        "repeat": -1
+      }
+    },
+    "dead": 4
+  },
+  "phone": {
+    "image": "phone.png",
+    "frameWidth": 18,
+    "frameHeight": 24,
+    "origin": "abajo al centro",
+    "frames": {
+      "idle": 0,
+      "inUse": 1
+    }
+  },
+  "exit_barrier": {
+    "image": "exit_barrier.png",
+    "frameWidth": 32,
+    "frameHeight": 48,
+    "origin": "abajo al centro",
+    "frames": {
+      "closed": 0,
+      "open": 1
+    }
+  }
+}

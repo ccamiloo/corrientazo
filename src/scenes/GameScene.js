@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, PLAYER, CAMERA, DEV } from '../config/constants.js';
+import { GAME_W, GAME_H, PLAYER, CAMERA, DEV, DEPTH, GAME_OVER } from '../config/constants.js';
 import { currentCharacter } from '../data/characters.js';
 import { ROOMS } from '../data/rooms/index.js';
 import { LEVELS } from '../levels/index.js';
@@ -12,6 +12,7 @@ import { RoomFlags } from '../systems/RoomFlags.js';
 import { buildRoom, tileToFeet, findGroundY } from '../systems/RoomBuilder.js';
 import { ParallaxBackground } from '../systems/ParallaxBackground.js';
 import { Music } from '../systems/Music.js';
+import { goToResults } from '../systems/startGame.js';
 
 // Escena de juego genérica: arma la habitación indicada por roomId a partir de sus datos.
 // Lo común (fondo, tiles, jugador, diálogo, cámara, interacción) vive aquí; lo propio de cada sala
@@ -26,6 +27,7 @@ export class GameScene extends Phaser.Scene {
     this.roomId = data.roomId ?? 'testRoom';
     this.room = ROOMS[this.roomId];
     this.isDying = false;
+    this.deathFilter = null;
   }
 
   create() {
@@ -43,7 +45,9 @@ export class GameScene extends Phaser.Scene {
     // --- Jugador ---
     // El sprite tiene origen al centro, así que lo subimos media altura desde el punto de apoyo.
     const character = currentCharacter(this.registry);
-    const spawn = tileToFeet(room.spawn);
+    // Punto de aparición: el del último punto de control tomado en esta sala (flag `checkpoint`, en tiles; lo
+    // guardan los cascos de la obra y sobrevive a la muerte), o el spawn de la sala.
+    const spawn = tileToFeet(this.flag('checkpoint') ?? room.spawn);
     this.player = new Player(this, spawn.x, spawn.y - PLAYER.height / 2, character.texture, this.controls);
     this.solidsCollider = this.physics.add.collider(this.player, solids);
 
@@ -64,6 +68,14 @@ export class GameScene extends Phaser.Scene {
 
     // --- Debug (F1) ---
     this.debug = new DebugOverlay(this, this.player);
+
+    // SOLO desarrollo: F9 termina la partida y va a la tabla de tiempos (el final todavía no existe).
+    // Las reglas rechazan tiempos de menos de LEADERBOARD.minTimeMs (constants.js). En el build de producción esto no existe.
+    if (import.meta.env.DEV) {
+      this.input.keyboard.on('keydown-F9', () => {
+        if (!this.isDying && this.scene.isActive()) goToResults(this);
+      });
+    }
   }
 
   // Flags de la sala actual (persisten en el registry entre muertes y reinicios de escena).
@@ -107,8 +119,37 @@ export class GameScene extends Phaser.Scene {
     PlayTimer.pause(this.registry);
     // El jugador se congela y reproduce la descarga completa; recién al terminar pasamos a Game Over.
     // Mientras tanto update() sale temprano (isDying), así que no hay entrada ni interacción.
+    this.registry.set('deaths', (this.registry.get('deaths') ?? 0) + 1);
     const tip = this.level.deathTip?.(cause);
-    this.player.electrocute(() => this.scene.start('GameOver', { roomId: this.roomId, tip }));
+    this.player.electrocute(() => this.freezeForGameOver(tip));
+  }
+
+  // La sala queda de fondo de Game Over: quieta (escena pausada, sigue dibujándose), con la cámara donde
+  // estaba y desaturada. El personaje lo vuelve a dibujar GameOver en grande, así que aquí se oculta.
+  freezeForGameOver(tip) {
+    this.player.setVisible(false);
+    // Fuera también lo que es interfaz: indicadores de interacción (DEPTH.prompt) y todo lo de DEPTH.ui-1
+    // para arriba (diálogo, HUD, avisos, carteles, debug). Las rayitas del viento (ui-2) se quedan: son ambiente.
+    for (const obj of this.children.list) {
+      if (obj.depth === DEPTH.prompt || obj.depth >= DEPTH.ui - 1) obj.setVisible(false);
+    }
+
+    // Saturación al 15% con el filtro ColorMatrix de la cámara (Phaser 4: camera.filters).
+    // saturate(v) arma la matriz con diagonal x = 1 + 2v/3 y el resto y = (1 - x)/2; la diferencia x - y,
+    // que es lo que queda del color, vale 1 + v. Con v = -0.85 queda 0.15.
+    this.deathFilter = this.cameras.main.filters.external.addColorMatrix();
+    this.deathFilter.colorMatrix.saturate(GAME_OVER.saturation - 1);
+
+    this.scene.pause();
+    this.scene.launch('GameOver', { roomId: this.roomId, tip });
+  }
+
+  // Lo llama GameOver antes de reiniciar la sala. La cámara se destruye igual al reiniciar la escena,
+  // pero quitarlo explícito evita depender de eso.
+  clearDeathFilter() {
+    if (!this.deathFilter) return;
+    this.cameras.main?.filters.external.remove(this.deathFilter);
+    this.deathFilter = null;
   }
 
   update(time, delta) {

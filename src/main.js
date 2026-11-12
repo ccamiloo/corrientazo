@@ -2,10 +2,14 @@ import * as Phaser from 'phaser';
 import { GAME_W, GAME_H, COLORS } from './config/constants.js';
 import { BootScene } from './scenes/BootScene.js';
 import { PreloadScene } from './scenes/PreloadScene.js';
+import { TitleScene } from './scenes/TitleScene.js';
 import { CharacterSelectScene } from './scenes/CharacterSelectScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { GameOverScene } from './scenes/GameOverScene.js';
 import { DevMenuScene } from './scenes/DevMenuScene.js';
+import { NameEntryScene } from './scenes/NameEntryScene.js';
+import { LeaderboardScene } from './scenes/LeaderboardScene.js';
+import { Leaderboard } from './systems/Leaderboard.js';
 
 const config = {
   // AUTO elige WebGL (en Phaser 4 el renderer Canvas está deprecado).
@@ -39,10 +43,23 @@ const config = {
     },
   },
 
-  scene: [BootScene, PreloadScene, CharacterSelectScene, GameScene, GameOverScene, DevMenuScene],
+  scene: [
+    BootScene,
+    PreloadScene,
+    TitleScene,
+    CharacterSelectScene,
+    NameEntryScene,
+    GameScene,
+    GameOverScene,
+    LeaderboardScene,
+    DevMenuScene,
+  ],
 };
 
 const game = new Phaser.Game(config);
+
+// Tabla de tiempos: sesión anónima en segundo plano. No bloquea el arranque; si falla, el juego sigue igual.
+Leaderboard.init();
 
 // MAX_ZOOM solo se calcula al arrancar. Al cambiar el tamaño de la ventana recalculamos
 // el mayor zoom entero que cabe (getMaxZoom usa el tamaño actual del contenedor).

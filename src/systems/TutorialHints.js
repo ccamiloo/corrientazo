@@ -1,4 +1,5 @@
-import { GAME_W, DEPTH, COLORS, FONT, TILE } from '../config/constants.js';
+import { GAME_W, DEPTH, COLORS, TILE } from '../config/constants.js';
+import { PanelText } from './pixelText.js';
 
 // Avisos de tutorial que aparecen UNA sola vez, en el momento justo.
 // Cada aviso (datos de la sala):
@@ -13,16 +14,7 @@ export class TutorialHints {
     this.hints = hints ?? [];
     this.active = null;
 
-    this.text = scene.add
-      .text(GAME_W / 2, 20, '', {
-        fontFamily: FONT,
-        fontSize: '10px',
-        color: COLORS.text,
-        backgroundColor: 'rgba(17,20,27,0.85)',
-        padding: { x: 6, y: 3 },
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
+    this.text = new PanelText(scene, GAME_W / 2, 20, '', { bg: COLORS.dialogBg, padX: 6, padY: 3, origin: [0.5, 0] })
       .setDepth(DEPTH.ui)
       .setAlpha(0);
   }

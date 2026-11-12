@@ -85,8 +85,8 @@ export const house = {
   spawn: { x: 30, y: 17 }, // piso 2, habitación
 
   npcs: [
-    { id: 'dad', texture: 'npc-dad', x: 24, y: 25 }, // piso 1
-    { id: 'grandma', texture: 'npc-grandma', x: 24, y: 9 }, // piso 3, bajo el techo
+    { id: 'dad', texture: 'papa', x: 24, y: 25 }, // piso 1
+    { id: 'grandma', texture: 'abuela', x: 24, y: 9 }, // piso 3, bajo el techo
   ],
 
   // Aparatos a desconectar. `kind` elige el placeholder (src/data/appliances.js).

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { TILE, PLAYER, COLORS, PARALLAX, BACKGROUNDS, BACKGROUND_SOURCES, MUSIC } from '../config/constants.js';
 import { bgKey } from '../systems/ParallaxBackground.js';
 import { CHARACTERS, animKey } from '../data/characters.js';
+import { NPC_SHEETS, npcAnimKey } from '../data/npcs.js';
 import { APPLIANCES, applianceKey, propKey } from '../data/appliances.js';
 import { ROOMS } from '../data/rooms/index.js';
 
@@ -32,6 +33,32 @@ export class PreloadScene extends Phaser.Scene {
     // y, cuando llega, encolamos el PNG (el loader sigue abierto mientras haya archivos pendientes).
     this.loadRoomArt();
 
+    // Interfaz: fuente pixel (BitmapFont XML), logo, botón JUGAR y flecha de selección.
+    this.load.bitmapFont('pixel', 'assets/fonts/corrientazo_font.png', 'assets/fonts/corrientazo_font.xml');
+    this.load.image('ui-logo', 'assets/ui/logo.png');
+    this.load.spritesheet('ui-button-jugar', 'assets/ui/button_jugar.png', { frameWidth: 88, frameHeight: 29 });
+    this.load.spritesheet('ui-arrow', 'assets/ui/arrow.png', { frameWidth: 11, frameHeight: 10 });
+
+    // Comanda del nombre y tabla de tiempos (public/assets/ui/results/README.txt).
+    const res = 'assets/ui/results/';
+    this.load.image('ne-ticket', res + 'ne_ticket.png');
+    this.load.image('lb-board', res + 'lb_board.png');
+    this.load.image('lb-card', res + 'lb_card.png');
+    this.load.image('lb-bolt', res + 'lb_bolt.png');
+    this.load.spritesheet('lb-heads', res + 'lb_heads.png', { frameWidth: 20, frameHeight: 18 });
+    this.load.spritesheet('lb-medals', res + 'lb_medals.png', { frameWidth: 12, frameHeight: 12 });
+    this.load.spritesheet('lb-row-hi', res + 'lb_row_hi.png', { frameWidth: 282, frameHeight: 18 });
+
+    // Game Over (public/assets/ui/gameover/, ver sus README). go_burst.png ya no se usa.
+    const go = 'assets/ui/gameover/';
+    this.load.spritesheet('go-pop', go + 'go_pop.png', { frameWidth: 136, frameHeight: 120 });
+    this.load.spritesheet('go-title', go + 'go_title.png', { frameWidth: 266, frameHeight: 50 });
+    this.load.spritesheet('go-smoke', go + 'go_smoke.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('go-hint', go + 'go_hint.png', { frameWidth: 188, frameHeight: 17 });
+    this.load.image('go-tipcard', go + 'go_tipcard.png');
+    this.load.image('go-badge', go + 'go_badge.png');
+    this.load.image('go-frame', go + 'go_frame.png');
+
     // Música (una key por pista: 'menus', 'playing', 'gameover'). Si falta un archivo, el loaderror de
     // arriba avisa y Music.play simplemente no suena.
     for (const [key, file] of Object.entries(MUSIC.tracks)) {
@@ -45,12 +72,24 @@ export class PreloadScene extends Phaser.Scene {
         this.load.spritesheet(c.texture, c.sheet.image, { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
       });
     }
+
+    // NPCs (papá, abuela, vecino): mismo encadenamiento JSON → spritesheet que los personajes.
+    for (const n of NPC_SHEETS) {
+      const dataKey = `${n.texture}-data`;
+      this.load.json(dataKey, n.data);
+      this.load.once(`filecomplete-json-${dataKey}`, (key, type, data) => {
+        this.load.spritesheet(n.texture, n.image, { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
+      });
+    }
   }
 
   // Arte de las salas que lo declaran (campo `art`): pared y estructura como imágenes del tamaño de la sala,
   // y props (aparatos, puerta) como spritesheets descritos en un props.json. Mismo encadenamiento que los
   // personajes: el JSON trae el tamaño de frame que el spritesheet necesita antes de cargarse.
+  // Las keys de los props son globales (`prop-<nombre>`): si dos salas traen un prop con el mismo nombre (el charco
+  // de la calle y el del mercado, que es el mismo dibujo), se carga solo el de la primera sala.
   loadRoomArt() {
+    const queued = new Set();
     for (const room of Object.values(ROOMS)) {
       const art = room.art;
       if (!art) continue;
@@ -62,6 +101,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.json(dataKey, art.props);
         this.load.once(`filecomplete-json-${dataKey}`, (key, type, props) => {
           for (const [name, p] of Object.entries(props)) {
+            if (queued.has(name)) continue;
+            queued.add(name);
             this.load.spritesheet(propKey(name), dir + p.image, { frameWidth: p.frameWidth, frameHeight: p.frameHeight });
           }
         });
@@ -86,8 +127,63 @@ export class PreloadScene extends Phaser.Scene {
     }
   }
 
+  // Animaciones de los NPCs desde su JSON, con keys `${texture}_${nombre}` (p. ej. 'papa_idle').
+  createNpcAnims() {
+    for (const n of NPC_SHEETS) {
+      const data = this.cache.json.get(`${n.texture}-data`);
+      if (!data || !this.textures.exists(n.texture)) continue;
+      for (const [name, a] of Object.entries(data.animations)) {
+        this.anims.create({
+          key: npcAnimKey(n.texture, name),
+          frames: this.anims.generateFrameNumbers(n.texture, { frames: a.frames }),
+          frameRate: a.frameRate,
+          repeat: a.repeat,
+        });
+      }
+    }
+  }
+
+  // Animaciones que traiga algún props.json de sala (p. ej. las chispas del cable): key `prop-<nombre>-<anim>`.
+  createPropAnims() {
+    for (const room of Object.values(ROOMS)) {
+      const props = room.art?.props && this.cache.json.get(`${room.id}-props`);
+      if (!props) continue;
+      for (const [name, p] of Object.entries(props)) {
+        // Si otra sala ya creó las animaciones de un prop con el mismo nombre (ver loadRoomArt), no se repiten.
+        if (!p.animations || !this.textures.exists(propKey(name))) continue;
+        for (const [anim, a] of Object.entries(p.animations)) {
+          if (this.anims.exists(`${propKey(name)}-${anim}`)) continue;
+          this.anims.create({
+            key: `${propKey(name)}-${anim}`,
+            frames: this.anims.generateFrameNumbers(propKey(name), { frames: a.frames }),
+            frameRate: a.frameRate,
+            repeat: a.repeat,
+          });
+        }
+      }
+    }
+  }
+
   create() {
     this.createCharacterAnims();
+    this.createNpcAnims();
+    this.createPropAnims();
+    // Flecha de la selección: alterna sus 2 frames para "rebotar".
+    if (this.textures.exists('ui-arrow')) {
+      this.anims.create({
+        key: 'ui-arrow-bounce',
+        frames: this.anims.generateFrameNumbers('ui-arrow', { frames: [0, 1] }),
+        frameRate: 3,
+        repeat: -1,
+      });
+    }
+    // Game Over: estallido detrás del personaje (loop) y bocanada de humo (una vez).
+    if (this.textures.exists('go-pop')) {
+      this.anims.create({ key: 'go-pop', frames: this.anims.generateFrameNumbers('go-pop'), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('go-smoke')) {
+      this.anims.create({ key: 'go-smoke', frames: this.anims.generateFrameNumbers('go-smoke'), frameRate: 8, repeat: 0 });
+    }
 
     // Graphics fuera de la lista de display (no se dibuja): solo lo usamos como "pincel".
     const g = this.make.graphics({ x: 0, y: 0 }, false);
@@ -127,12 +223,8 @@ export class PreloadScene extends Phaser.Scene {
       outline(gr, w, h);
     });
 
-    // NPCs de la casa: mismo molde que 'npc', con otro color.
-    for (const [key, color] of [
-      ['npc-dad', COLORS.npcDad],
-      ['npc-grandma', COLORS.npcGrandma],
-      ['npc-neighbor', COLORS.npcNeighbor],
-    ]) {
+    // NPCs del mercado (placeholders, mismo molde que 'npc'): el vendedor del pescado y doña Carmen.
+    for (const [key, color] of [['npc-vendedor', COLORS.vendedor], ['npc-carmen', COLORS.carmen]]) {
       make(key, 16, 28, (gr, w, h) => {
         gr.fillStyle(color).fillRect(0, 0, w, h);
         gr.fillStyle(0x0b0d12).fillRect(4, 7, 2, 3).fillRect(10, 7, 2, 3);
@@ -164,6 +256,80 @@ export class PreloadScene extends Phaser.Scene {
     make('pole', TILE, TILE, (gr) => {
       gr.fillStyle(COLORS.pole).fillRect(6, 0, 4, TILE);
     });
+
+    // Parque (nivel 3): sólidos con el molde de siempre, un color por objeto.
+    for (const [key, color] of [
+      ['tile-grass', COLORS.grass],
+      ['tile-tower', COLORS.tower],
+      ['tile-bridge', COLORS.bridge],
+    ]) {
+      make(key, TILE, TILE, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
+      });
+    }
+    // Decorativos del parque: farol (L) y asta de la manga (W) como franjas angostas; tronco (T) de 12 px.
+    make('lamp', TILE, TILE, (gr) => gr.fillStyle(COLORS.lamp).fillRect(6, 0, 4, TILE));
+    make('sock-pole', TILE, TILE, (gr) => gr.fillStyle(COLORS.sockPole).fillRect(7, 0, 2, TILE));
+    make('trunk', TILE, TILE, (gr) => gr.fillStyle(COLORS.trunk).fillRect(0, 0, TILE, TILE));
+
+    // Mercado (nivel 4): sólidos con el molde de siempre; la lata con un brillo para diferenciarla de la madera.
+    for (const [key, color] of [
+      ['tile-floor', COLORS.floorTile],
+      ['tile-crate', COLORS.crate],
+      ['tile-fruit', COLORS.fruitStall],
+      ['tile-wood', COLORS.wood],
+      ['tile-metal', COLORS.metal],
+    ]) {
+      make(key, TILE, TILE, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
+        if (key === 'tile-metal') gr.fillStyle(0xe8ecf1, 0.5).fillRect(3, 3, 2, h - 6).fillRect(9, 3, 1, h - 6);
+      });
+    }
+    // Obra (nivel 5): sólidos con el molde de siempre, con un detalle por material para leer el layout.
+    for (const [key, color] of [
+      ['tile-site', COLORS.siteGround],
+      ['tile-sack', COLORS.sack],
+      ['tile-concrete', COLORS.concrete],
+      ['tile-beam', COLORS.beam],
+    ]) {
+      make(key, TILE, TILE, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.tileEdge).fillRect(0, 0, w, 1).fillRect(0, 0, 1, h);
+        if (key === 'tile-sack') gr.fillStyle(0x8f866f).fillRect(2, 7, 12, 1); // costura del saco
+        if (key === 'tile-beam') gr.fillStyle(0x8796a6).fillRect(0, 1, w, 2).fillRect(0, h - 3, w, 2).fillRect(7, 3, 2, h - 6); // perfil en I
+      });
+    }
+    // Mocho de columna: concreto con varillas que asoman arriba.
+    make('tile-rebar-stub', TILE, TILE, (gr, w, h) => {
+      gr.fillStyle(COLORS.concrete).fillRect(1, 5, w - 2, h - 5);
+      gr.fillStyle(COLORS.rebar).fillRect(3, 0, 2, 6).fillRect(7, 1, 2, 5).fillRect(11, 0, 2, 6);
+    });
+    // Tablón del andamio (decorativo para RoomBuilder; la sala le pone la colisión de un solo sentido): tabla de 6 px.
+    make('tile-plank', TILE, TILE, (gr, w) => {
+      gr.fillStyle(COLORS.plank).fillRect(0, 0, w, 6);
+      gr.fillStyle(0x6e4c26).fillRect(0, 5, w, 1).fillRect(w - 1, 0, 1, 6);
+    });
+    // NPCs de la obra (placeholders): el maestro de obra y la ingeniera residente, con casco.
+    for (const [key, color] of [['npc-maestro', COLORS.maestro], ['npc-ingeniera', COLORS.ingeniera]]) {
+      make(key, 16, 28, (gr, w, h) => {
+        gr.fillStyle(color).fillRect(0, 0, w, h);
+        gr.fillStyle(COLORS.helmet).fillRect(0, 0, w, 4);
+        gr.fillStyle(0x0b0d12).fillRect(4, 8, 2, 3).fillRect(10, 8, 2, 3);
+        outline(gr, w, h);
+      });
+    }
+
+    // Taco (16x20): palanca arriba (prendido) o abajo (apagado).
+    for (const [key, leverY] of [['breaker-on', 4], ['breaker-off', 12]]) {
+      make(key, 16, 20, (gr, w, h) => {
+        gr.fillStyle(COLORS.breaker).fillRect(0, 0, w, h);
+        gr.fillStyle(0x2b2b2b).fillRect(6, 3, 4, 14);
+        gr.fillStyle(key === 'breaker-on' ? 0xe5484d : 0x7cfc9a).fillRect(4, leverY, 8, 4);
+        outline(gr, w, h);
+      });
+    }
     // Columna (|): decorativa, más angosta que el tile.
     make('column', TILE, TILE, (gr) => {
       gr.fillStyle(COLORS.column).fillRect(5, 0, 6, TILE);
@@ -219,6 +385,6 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     g.destroy();
-    this.scene.start('CharacterSelect');
+    this.scene.start('Title');
   }
 }

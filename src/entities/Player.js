@@ -36,6 +36,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.dead = false;
 
     this.frozen = false;
+    // Viento (parque): px/s que se suman a la velocidad x SOLO en el aire. Lo fija el script de la sala en cada
+    // frame (0 en las demás). appliedWindX = lo que se sumó el frame anterior, para descontarlo y recuperar la
+    // velocidad "propia" (la de la entrada): así el viento no se acumula frame a frame.
+    this.windX = 0;
+    this.appliedWindX = 0;
+    // Empujón (carretilla del mercado): mientras time < pushUntil, la velocidad x es pushVx y no cuenta la entrada.
+    this.pushVx = 0;
+    this.pushUntil = -Infinity;
     this.lastGroundedAt = -Infinity; // ms, último instante en que tocó suelo (coyote time)
     this.jumpPressedAt = -Infinity; // ms, último instante en que se presionó saltar (jump buffer)
     this.jumpCutDone = true; // si ya se aplicó el corte de salto variable en este salto
@@ -77,6 +85,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.play(key);
   }
 
+  // Empuja al jugador con velocidad x `vx` hasta el instante `until` (ms, mismo reloj que el `time` del update).
+  push(vx, until) {
+    this.pushVx = vx;
+    this.pushUntil = until;
+  }
+
   respawn(x, y) {
     this.body.reset(x, y);
     this.lastGroundedAt = -Infinity;
@@ -106,7 +120,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // --- Horizontal: aceleración / desaceleración ---
     // Lo hacemos a mano en vez de usar setDrag/setAcceleration de Arcade porque el drag solo
     // actúa cuando la aceleración es 0 y no permite valores distintos en suelo y aire.
-    const vx = body.velocity.x;
+    // Velocidad propia = la del body menos el viento que se le sumó el frame anterior. Con windX = 0 (todas las
+    // salas menos el parque) es exactamente body.velocity.x, como antes.
+    const vx = body.velocity.x - this.appliedWindX;
     let rate;
     if (dir === 0) {
       rate = grounded ? MOVE.decel : MOVE.airDecel;
@@ -115,7 +131,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       rate = grounded ? MOVE.accel : MOVE.airAccel;
     }
-    body.setVelocityX(approach(vx, dir * MOVE.maxSpeed, rate * dt));
+    // En el aire el viento se suma a la velocidad final (en el piso no empuja).
+    this.appliedWindX = grounded ? 0 : this.windX;
+    if (time < this.pushUntil) {
+      // Empujado: manda el empujón (sin viento ni entrada).
+      this.appliedWindX = 0;
+      body.setVelocityX(this.pushVx);
+    } else {
+      body.setVelocityX(approach(vx, dir * MOVE.maxSpeed, rate * dt) + this.appliedWindX);
+    }
     if (dir !== 0) this.setFlipX(dir < 0);
 
     // --- Salto con coyote time y jump buffer ---

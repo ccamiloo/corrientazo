@@ -1,74 +1,68 @@
 import * as Phaser from 'phaser';
-import { GAME_W, GAME_H, COLORS, FONT, DEV } from '../config/constants.js';
+import { GAME_W, GAME_H, DEPTH, DEV, MENU, UI } from '../config/constants.js';
 import { CHARACTERS } from '../data/characters.js';
-import { START_ROOM } from '../data/rooms/index.js';
 import { Controls } from '../systems/Controls.js';
-import { startNewGame } from '../systems/startGame.js';
 import { Music } from '../systems/Music.js';
+import { pixelText } from '../systems/pixelText.js';
+import { menuBackground, menuCharacter, playIfExists, drawPedestal } from '../systems/menuHelpers.js';
 
+// Selección de personaje (docs/mockups/mockup_seleccion_x3.png, a x3; aquí en px del juego).
 export class CharacterSelectScene extends Phaser.Scene {
   constructor() {
     super('CharacterSelect');
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(COLORS.background);
     this.controls = new Controls(this);
     Music.play(this, 'menus');
     this.index = this.registry.get('characterIndex') ?? 0;
 
+    // La misma calle, quieta y oscurecida con un overlay azulado (atardecer). El overlay va entre el fondo
+    // (depth -100..-97) y todo lo demás.
+    menuBackground(this);
     this.add
-      .text(GAME_W / 2, 52, 'CORRIENTAZO', { fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: COLORS.danger })
-      .setOrigin(0.5);
-    this.add
-      .text(GAME_W / 2, 84, 'Elige tu personaje', { fontFamily: FONT, fontSize: '10px', color: COLORS.text })
-      .setOrigin(0.5);
+      .rectangle(0, 0, GAME_W, GAME_H, MENU.duskColor, MENU.duskAlpha)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.background + 10);
 
-    // Personajes en una fila centrada; el cursor es un marco que se mueve al seleccionado.
-    // Cabe en 480 px: 5 sprites de 48 px (24 x2) con 88 px entre centros ocupan 4·88 + 54 ≈ 406 px
-    // (54 = ancho aproximado de "Sebastián", la etiqueta más larga, a 10 px monospace).
-    const spacing = 88;
-    const baseY = 160;
+    pixelText(this, GAME_W / 2, 48, 'Escoge tu personaje', { color: UI.yellow, scale: 2, origin: 0.5 }).setScrollFactor(0);
+
+    // Cinco pedestales en fila, 86 px entre centros (como el mockup). Pies sobre la cara de arriba del pedestal.
+    const spacing = 86;
+    const feetY = 190;
     const firstX = GAME_W / 2 - ((CHARACTERS.length - 1) * spacing) / 2;
     this.slots = CHARACTERS.map((c, i) => {
       const x = firstX + i * spacing;
-      // Con spritesheet hay que pedir un frame (0 = idle); sin frame Phaser mostraría la hoja entera.
-      const sprite = this.add.image(x, baseY, c.texture, c.sheet ? 0 : undefined).setScale(2);
-      const label = this.add
-        .text(x, baseY + 48, c.name, { fontFamily: FONT, fontSize: '10px', color: COLORS.textDim })
-        .setOrigin(0.5);
-      return { x, sprite, label };
+      drawPedestal(this, x, feetY);
+      const sprite = menuCharacter(this, c, x, feetY, 'idle');
+      const label = pixelText(this, x, 214, c.name, { origin: 0.5 }).setScrollFactor(0);
+      return { x, sprite, label, character: c };
     });
-    // Marco un poco más ancho que el sprite más ancho (24 px x2 = 48 px) para que no le pise los bordes.
-    const cursorW = Math.max(...this.slots.map((s) => s.sprite.displayWidth)) + 8;
-    this.cursor = this.add.rectangle(0, baseY, cursorW, 80).setStrokeStyle(1, 0xffffff).setFillStyle();
 
-    this.add
-      .text(GAME_W / 2, GAME_H - 20, '← → para elegir   ·   Enter para confirmar', {
-        fontFamily: FONT,
-        fontSize: '8px',
-        color: COLORS.textDim,
-      })
-      .setOrigin(0.5);
+    // Flecha sobre el seleccionado: 2 frames que se alternan para que "rebote".
+    this.arrow = this.add.sprite(0, 138, 'ui-arrow', 0).setOrigin(0.5, 0).setScrollFactor(0);
+    if (this.anims.exists('ui-arrow-bounce')) this.arrow.play('ui-arrow-bounce');
+
+    // Sin '·' de separador: la fuente no lo trae.
+    pixelText(this, GAME_W / 2, 243, '← → para escoger     Enter para jugar', { origin: 0.5 }).setScrollFactor(0);
 
     // TEMPORAL (desarrollo): acceso al menú de salas.
     if (DEV.menu) {
-      this.add
-        .text(GAME_W / 2, GAME_H - 8, 'F3: menú de desarrollo', { fontFamily: FONT, fontSize: '8px', color: COLORS.textDim })
-        .setOrigin(0.5)
-        .setAlpha(0.6);
+      pixelText(this, GAME_W / 2, 261, 'F3: menú de desarrollo', { color: UI.dim, origin: 0.5 }).setScrollFactor(0);
     }
 
     this.refresh();
   }
 
+  // Seleccionado: nombre amarillo, camina en el sitio y lleva la flecha. Los demás: blanco e idle.
   refresh() {
     this.slots.forEach((s, i) => {
       const selected = i === this.index;
-      s.label.setColor(selected ? COLORS.text : COLORS.textDim);
-      s.sprite.setAlpha(selected ? 1 : 0.5);
+      s.label.setColor(selected ? UI.yellow : UI.white);
+      playIfExists(s.sprite, s.character, selected ? 'walk' : 'idle');
     });
-    this.cursor.x = this.slots[this.index].x;
+    this.arrow.x = this.slots[this.index].x;
   }
 
   update() {
@@ -85,7 +79,8 @@ export class CharacterSelectScene extends Phaser.Scene {
     const devMenu = this.controls.justDown('devMenu');
     if (confirm) {
       this.registry.set('characterIndex', this.index);
-      startNewGame(this, START_ROOM);
+      // Antes del primer nivel, el nombre para la tabla de tiempos (NameEntry arranca la partida).
+      this.scene.start('NameEntry');
     } else if (devMenu && DEV.menu) {
       // El menú entra con el personaje que esté marcado en este momento.
       this.registry.set('characterIndex', this.index);

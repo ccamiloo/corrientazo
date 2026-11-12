@@ -119,6 +119,16 @@ export class ParallaxBackground {
     return this;
   }
 
+  // Ancla para pantallas sin sala (menús): la fila `row` de las capas queda en la y de pantalla `screenY`.
+  // Usa el scroll vertical actual como referencia (en los menús la cámara no se mueve en vertical).
+  // Ojo: sin startFollow la cámara no emite FOLLOW_UPDATE, así que la escena llama update() a mano.
+  anchorScreen(screenY, row) {
+    this.maxScrollY = this.cam.scrollY;
+    this.baseY = screenY - row;
+    this.update();
+    return this;
+  }
+
   update() {
     const { scrollX, scrollY } = this.cam;
     // Δ = cuánto subió la cámara respecto a la referencia (≥ 0).

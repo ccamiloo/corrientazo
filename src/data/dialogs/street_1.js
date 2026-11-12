@@ -32,5 +32,4 @@ export const street1Dialogs = {
     puddle: 'El agua conduce la electricidad: si un cable cae cerca de un charco, no lo pises.',
     cable: 'Un cable caído puede estar energizado. Aléjate y llama a la empresa de energía.',
   },
-  end: 'Fin de la sala 1',
 };
