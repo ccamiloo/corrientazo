@@ -133,7 +133,8 @@ export const CABLE = {
   amplitudeDeg: 40, // grados a cada lado de la vertical
   // s, ida y vuelta completa. Medido con un bot que cruza por la banca: con 3 s el cruce es imposible,
   // con 4 s las ventanas son de 0.3 s (saltar del carro) y 0.6 s (arrancar desde la banca); con 4.5 s, 0.6 y 0.8.
-  periodS: 4.5,
+  // Subido a 6 s por feedback de jugadores (4.5 s se sentía demasiado difícil): ventanas ~33% más largas.
+  periodS: 6,
   // "Parte baja del arco": mientras |θ| sea menor que esto, la punta está tocando el charco y lo electrifica.
   // 12° ≈ la punta a menos de 4 px del suelo con el ancla a 12 tiles.
   lowArcDeg: 12,
